@@ -1,20 +1,19 @@
 import tkinter as tk
 from tkinter import filedialog
 from AStarAlgorithm import AStarAlgorithm
-from util import Map
-from util import Point
+from AStarAlgorithm import heuristic_diagonal_distance
+from AStarAlgorithm import heuristic_euclidean
 
 
 class Application(tk.Frame):
+    COLOR_SOLUTION = '#12FF10'  # Green
+    COLOR_CLOSESET = '#970E0E'  # Red đậm
+    COLOR_OPENSET = '#F6EC48'  # Yellow
+    COLOR_START = '#0904FF'  # Blue
+    COLOR_GOAL = '#FF070A'  # Red
+    COLOR_OBSTACLE = '#726E69'  # Grey
+    COLOR_NONE = '#000000'  # Black
 
-    COLOR_SOLUTION = '#0000FF'
-    COLOR_CLOSESET = '#470a0a'
-    COLOR_OPENSET  = '#0e592e'
-    COLOR_START    = '#0e5159'
-    COLOR_GOAL     = '#00FF00'
-    COLOR_OBSTACLE = '#000000'
-    COLOR_NONE     = '#414949'
-    
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
         self.pack()
@@ -70,13 +69,14 @@ class Application(tk.Frame):
 
     def on_button_load_map_click(self):
         file_name = filedialog.askopenfilename(initialdir='./',
-                                              title='Select file',
-                                              filetypes=(
-                                                  ("txt files", "*.txt"),
-                                                  ("all files", "*.*")
-                                              ))
+                                               title='Select file',
+                                               filetypes=(
+                                                   ("txt files", "*.txt"),
+                                                   ("all files", "*.*")
+                                               ))
+        # file_name = "input_2.txt"
         if file_name:
-            self.alg = AStarAlgorithm(self.load_map_from_file(file_name))
+            self.alg = AStarAlgorithm(self.load_map_from_file(file_name), heuristic_euclidean)
             self.restart()
 
     def on_button_restart_click(self):
@@ -89,7 +89,7 @@ class Application(tk.Frame):
     def fast_forward_alg(self):
         try:
             self.display_alg_step()
-            self.after(50, self.fast_forward_alg)
+            self.after(10, self.fast_forward_alg)
         except StopIteration:
             print('Done')
 
@@ -112,15 +112,19 @@ class Application(tk.Frame):
         file = open(file_path, 'r')
 
         n = int(file.readline().split()[0])
+
         sx, sy = [int(x) for x in file.readline().split()]
-        start = Point(sx, sy)
+        start = (sx, sy)
 
         gx, gy = [int(x) for x in file.readline().split()]
-        goal = Point(gx, gy)
+        goal = (gx, gy)
 
         matrix = [[int(x) for x in line.split()] for line in file]
+        if matrix[gx][gy] == 1:
+            print('goal errro\n fix it')
+            matrix[gx][gy] = 0
         file.close()
-        return Map(n, n, start, goal, matrix)
+        return (n, n, start, goal, matrix)
 
     def display_map(self):
         self.frame_map.instance = []
@@ -128,7 +132,7 @@ class Application(tk.Frame):
             row = []
             for y in range(self.alg.map.row):
                 button = tk.Button(self.frame_map)
-                if self.alg.map.is_obstacle(Point(x, y)):
+                if self.alg.map.is_obstacle((y, x)):
                     color = self.COLOR_OBSTACLE
                 else:
                     color = self.COLOR_NONE
@@ -141,62 +145,99 @@ class Application(tk.Frame):
 
                 button.bind("<Enter>", self.on_mouse_enter_button)
                 button.bind("<Leave>", self.on_mouse_leave_button)
-                button.position = Point(x, y)
+                button.position = (x, y)
                 row.append(button)
             self.frame_map.instance.append(row)
-        self.frame_map.instance[self.alg.map.start.x][self.alg.map.start.y]['bg'] = self.COLOR_START
-        self.frame_map.instance[self.alg.map.goal.x][self.alg.map.goal.y]['bg'] = self.COLOR_GOAL
+        self.frame_map.instance[self.alg.map.start[1]][self.alg.map.start[0]]['bg'] = self.COLOR_START
+        self.frame_map.instance[self.alg.map.goal[1]][self.alg.map.goal[0]]['bg'] = self.COLOR_GOAL
 
     def start(self):
-        self.current_state_iter = self.alg.solve()
+        self.current_state_iter = self.alg.findPath()
         self.is_started = True
 
     def restart(self):
         self.is_started = False
-        self.current_state_iter = self.alg.solve()
+        self.current_state_iter = self.alg.findPath()
         self.current_state = None
         # TODO: cancel after() if click restart while fast_forward
         self.display_map()
 
     def isInSet(self, position, _set):
-        for p in _set:
-            position_index = self.alg.map.index(position)
-            if position_index == p:
-                return True
-        return False
-        
-    def updateStepAlgorithm(self, alg_state):
-        for row in self.frame_map.instance:
-            for button in row:
-                button_point = Point(button.position.x, button.position.y)
+        # for p in _set:
+        #     position_index = self.alg.map.index(position)
+        #     if position_index == p:
+        #         return True
+        # return False
+        return (position in _set)
 
-                if alg_state['flagSolution'] and self.isInSet(button_point, alg_state['solution']):
-                    button['bg'] = self.COLOR_SOLUTION
-                elif self.isInSet(button_point, alg_state['openSet']):
-                    button['bg'] = self.COLOR_OPENSET
-                elif self.isInSet(button_point, alg_state['closeSet']):
-                    button['bg'] = self.COLOR_CLOSESET
-                elif self.alg.map.is_obstacle(button_point):
-                    button['bg'] = self.COLOR_OBSTACLE
-                elif self.alg.map.is_start(button_point):
-                    button['bg'] = self.COLOR_START
+    def updateStepAlgorithm(self, alg_state):
+        # for row in self.frame_map.instance:
+        #     for button in row:
+        #         button_point = button.position
+        #
+        #         if alg_state['flagSolution'] and self.isInSet(button_point, alg_state['solution']):
+        #             button['bg'] = self.COLOR_SOLUTION
+        #             # print(button.position)
+        #         elif self.isInSet(button_point, alg_state['openSet']):
+        #             button['bg'] = self.COLOR_OPENSET
+        #         elif self.isInSet(button_point, alg_state['closeSet']):
+        #             button['bg'] = self.COLOR_CLOSESET
+        #         elif self.alg.map.is_obstacle(button_point):
+        #             button['bg'] = self.COLOR_OBSTACLE
+        #         elif self.alg.map.is_start(button_point):
+        #             button['bg'] = self.COLOR_START
+        #         elif self.alg.map.is_goal(button_point):
+        #             button['bg'] = self.COLOR_GOAL
+        #         else:
+        #             button['bg'] = self.COLOR_NONE
+        #             #
+        #
+        #
+        #         if self.alg.map.is_start(button_point):
+        #             button['bg'] = self.COLOR_START
+        #         elif self.alg.map.is_goal(button_point):
+        #             button['bg'] = self.COLOR_GOAL
+
+        for i in range(self.alg.map.row):
+            for j in range(self.alg.map.col):
+                button_point = (i, j)
+                if self.alg.map.is_start(button_point):
+                    self.set_colorButton(button_point, self.COLOR_START)
                 elif self.alg.map.is_goal(button_point):
-                    button['bg'] = self.COLOR_GOAL
+                    self.set_colorButton(button_point, self.COLOR_GOAL)
+                elif alg_state['flagSolution'] and self.isInSet(button_point, alg_state['solution']):
+                    self.set_colorButton(button_point, self.COLOR_SOLUTION)
+                elif self.isInSet(button_point, alg_state['openSet']):
+                    self.set_colorButton(button_point, self.COLOR_OPENSET)
+                elif self.isInSet(button_point, alg_state['closeSet']):
+                    self.set_colorButton(button_point, self.COLOR_CLOSESET)
+                elif self.alg.map.is_obstacle(button_point):
+                    self.set_colorButton(button_point, self.COLOR_OBSTACLE)
+                elif self.alg.map.is_start(button_point):
+                    self.set_colorButton(button_point, self.COLOR_START)
+                elif self.alg.map.is_goal(button_point):
+                    self.set_colorButton(button_point, self.COLOR_GOAL)
                 else:
-                    button['bg'] = self.COLOR_NONE
+                    self.set_colorButton(button_point, self.COLOR_NONE)
+
+    def set_colorButton(self, pos, color):
+        self.frame_map.instance[pos[1]][pos[0]]['bg'] = color
 
     def on_mouse_enter_button(self, event):
         button = event.widget
-        self.frame_info.instance.insert(1, 'x = {0}'.format(button.position.x))
-        self.frame_info.instance.insert(2, 'y = {0}'.format(button.position.y))
-        if self.current_state:
-            position_index = self.alg.map.index(button.position)
-            g_score = self.current_state['gScore'][position_index]
-            self.frame_info.instance.insert(3, 'g_score = {0}'.format(g_score))
-            h_score = self.alg.heuristic_function(button.position, self.alg.map.goal, self.alg.map)
-            self.frame_info.instance.insert(4, 'h_score = {0}'.format(h_score))
-            f_score = g_score + h_score
-            self.frame_info.instance.insert(5, 'f_score = {0}'.format(f_score))
+        row=button.position[1]
+        col=button.position[0]
+        self.frame_info.instance.insert(2, 'row = {0}'.format(row))
+        self.frame_info.instance.insert(3, 'col  = {0}'.format(col))
+
+        # if self.current_state:
+        #     g_score = self.current_state['gScore'][(col,row)]
+        #     self.frame_info.instance.insert(3, 'g_score = {0}'.format(g_score))
+        #     h_score = self.alg.heuristic_function(button.position, self.alg.map.goal, self.alg.map)
+        #     self.frame_info.instance.insert(4, 'h_score = {0}'.format(h_score))
+        #     f_score = g_score + h_score
+        #     self.frame_info.instance.insert(5, 'f_score = {0}'.format(f_score))
+        pass
 
     def on_mouse_leave_button(self, event):
         del event
