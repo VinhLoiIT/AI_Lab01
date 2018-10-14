@@ -1,103 +1,120 @@
 import math
-from util import Map
 
 
-def heuristic_euclidean(position, goal, input_map):
-    del input_map  # not used, but net for prototyping
-    return math.sqrt((position.x - goal.x)**2 + (position.y - goal.y)**2)
+# Tọa độ là (x,y): x: dòng ngang, y: cột dọc, khác với cách thể hiện đồ họa
+
+def heuristic_euclidean(start, goal):
+    return math.sqrt((start[0] - goal[0]) ** 2 + (start[1] - goal[1]) ** 2)
 
 
-class AStarAlgorithm:
-    INFINITY = 2000000
+def heuristic_diagonal_distance(start, goal):
+    return max(math.fabs(start[0] - goal[0]), math.fabs(start[1] - goal[1]))
 
-    def __init__(self, input_map, heuristic_function=heuristic_euclidean):
-        if not isinstance(input_map, Map):
-            raise TypeError
-        
-        self.map = input_map
+
+class AStarAlgorithm():
+    class Map:
+        # Nhận tham số kiểu tuple
+        # start = (row, col)
+        def __init__(self, map):
+            self.row, self.col, self.start, self.goal, self.graph = map
+
+        def is_valid_position(self, pos):
+            return (0 <= pos[0] < self.row and 0 <= pos[1] < self.col)
+
+        def is_obstacle(self, position):
+            return self.graph[position[0]][position[1]] == 1
+
+        def is_start(self, position):
+            return position == self.start
+
+        def is_goal(self, position):
+            return position == self.goal
+
+        def getVecteNeighborhood(self, pos):
+            dis = [(-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1)]
+            n = []
+
+            for i, j in dis:
+                p = (pos[0] + i, pos[1] + j)
+                if self.is_valid_position(p):
+                    n.append(p)
+
+            return n
+
+    def __init__(self, map, heureistic_function=heuristic_euclidean):
+        self.map = self.Map(map)
         self.state = {}
-        self.heuristic_function = heuristic_function
+        self.heuristic_function = heureistic_function
 
     def set_heuristic_function(self, func):
         self.heuristic_function = func
 
-    def trace(self, previous):
-        solution = []
-        if self.state['flagSolution']:
-            x = self.map.index(self.map.goal)
-            solution.insert(0, x)
-            while x != self.map.index(self.map.start):
-                x = previous[x]
-                solution.insert(0, x)
-                yield solution
-        return solution
-
-    @staticmethod
-    def get_min_cost(score, _set):
-        cost_list = [score[x] for x in _set]
-        return _set[cost_list.index(min(cost_list))]
-
-    def solve(self):
+    def syncCode(self):
         state = self.state
-        state['openSet'] = [self.map.index(self.map.start)]
+        state['openSet'] = [self.map.start]
         state['closeSet'] = []
-        state['solution'] = []
         state['cameFrom'] = {}
-        state['gScore'] = [AStarAlgorithm.INFINITY] * self.map.size(True)
-        state['fScore'] = list(state['gScore'])
-        start_index = self.map.index(self.map.start)
-        state['gScore'][start_index] = 0
-        state['fScore'][start_index] = self.heuristic_function(self.map.start, self.map.goal, self.map)
-        state['flagSolution'] = False
+        state['gScore'] = {}
+        state['fScore'] = {}
+        return (state['openSet'], state['closeSet'], state['cameFrom'], state['gScore'], state['fScore'])
 
-        open_set = state['openSet']
-        close_set = state['closeSet']
+    # Trả về mảng vecter lưu những điểm lân cận của pos
+    def findPath(self):
+
+        state = self.state
+        start = self.map.start
+        goal = self.map.goal
+
+        state['flagSolution'] = False
+        openVertices, closeVertices, cameFrom, G, F = self.syncCode()
+        G[start] = 0
+        F[start] = self.heuristic_function(start, goal)
+
         yield state
 
-        while len(open_set) != 0:
-            index_current = AStarAlgorithm.get_min_cost(state['fScore'], open_set)
+        while len(openVertices) > 0:
+
             yield state
-            
-            if index_current == self.map.index(self.map.goal):
-                self.state['flagSolution'] = True
-                break
+            current = None
+            currentFscore = None
+            for pos in openVertices:
+                if current is None or F[pos] < currentFscore:
+                    current = pos
+                    currentFscore = F[pos]
 
-            open_set.remove(index_current)
-            yield state
-            close_set.append(index_current)
-            yield state
-            
-            for neighbor in self.map.neighbor(self.map.position(index_current)):
-                index_neighbor = self.map.index(neighbor)
-
-                if self.map.is_obstacle(neighbor):
-                    continue
-
-                if index_neighbor in close_set:
-                    continue
-
-                score_tentative = self.state['gScore'][index_current] + 1  # 1 = current to neighbor
-
-                if index_neighbor not in self.state['openSet']:
-                    open_set.append(index_neighbor)
+            # Kiểm tra xem đã về đích chưa
+            # Check if we have reached the goal
+            if current == goal:
+                state['flagSolution'] = True
+                state['solution'] = [current]
+                while current in cameFrom:
                     yield state
-                elif score_tentative >= self.state['gScore'][index_neighbor]:
-                    continue
+                    current = cameFrom[current]
+                    state['solution'].append(current)
+                state['solution'].reverse()
+                print(len(state['solution']))
 
-                self.state['cameFrom'][index_neighbor] = index_current
-                self.state['gScore'][index_neighbor] = score_tentative
-                self.state['fScore'][index_neighbor] = self.state['gScore'][index_neighbor] +\
-                                                       self.heuristic_function(neighbor, self.map.goal, self.map)
-                yield state
+                return state['solution']  # Done!!!!!!!!!!!!!!!!!
 
-        if self.state['flagSolution']:
-            trace_generator = self.trace(state['cameFrom'])
-            try:
-                while True:
-                    state['solution'] = trace_generator.__next__()
-                    yield state
-            except StopIteration:
-                pass
+            # Đánh dấu current bị đóng
+            # Mark the current as closed
+            openVertices.remove(current)
+            closeVertices.append(current)
 
-        return state['solution']
+            # Cập nhật hàm G và F cho các đỉnh lân cận current
+            # Update scores for vertices near the current position
+            for neighbour in self.map.getVecteNeighborhood(current):
+                if (not self.map.is_obstacle(neighbour) and neighbour not in closeVertices):
+                    # move cost = 1
 
+                    nG = G[current] + 1
+                    if neighbour not in openVertices:
+                        openVertices.append(neighbour)
+                    elif nG >= G[neighbour]:
+                        continue
+
+                    cameFrom[neighbour] = current
+                    G[neighbour] = nG
+                    F[neighbour] = G[neighbour] + self.heuristic_function(neighbour, goal)
+
+        return None

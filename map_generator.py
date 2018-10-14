@@ -19,7 +19,7 @@ import random as r
 filename = 'input_4.txt'
 
 # Change size of the map here
-n = 10
+n = 100
 
 # Open File
 file = open(filename, mode='w')
