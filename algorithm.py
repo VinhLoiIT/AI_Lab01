@@ -2,22 +2,12 @@ import tkinter as tk
 # Tọa độ là (x,y): x: dòng ngang, y: cột dọc, khác với cách thể hiện đồ họa
 import math
 from node import NodeState
-import threading
 
 def heuristic_euclidean(start, goal):
     return math.sqrt((start[0] - goal[0]) ** 2 + (start[1] - goal[1]) ** 2)
 
 def heuristic_diagonal_distance(start, goal):
     return max(math.fabs(start[0] - goal[0]), math.fabs(start[1] - goal[1]))
-
-def AStarDemo(alg, _):
-    alg.AStarOneShot(1)
-
-def ARAStarDemo(alg, time_limit):
-    thread = threading.Thread(target=alg.ARAStar)
-    thread.daemon = True
-    thread.start()
-    thread.join(time_limit)
 
 class AlgorithmState:
     INIT = 0
@@ -34,11 +24,6 @@ class Algorithm:
         'Diagonal Distance': heuristic_diagonal_distance
     }
 
-    AlgorithmFunction = {
-        'AStarDemo': AStarDemo,
-        'ARADemo': ARAStarDemo
-    }
-
     def __init__(self, map, heuristic_function=heuristic_euclidean):
         self.map = map
         self.state = AlgorithmState.INIT
@@ -48,8 +33,11 @@ class Algorithm:
         self.closeVertices = []
         self.cameFrom = {}
         self.incons = []  # local inconsistency
-        G = self.G = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
-        F = self.F = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
+        self.G = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
+        self.F = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
+
+    def onUpdateMap(self):
+        self.__AStarInit(1)
 
     def set_heuristic_function(self, func):
         self.heuristic_function = func
@@ -135,7 +123,7 @@ class Algorithm:
 
         s = self.map.start
         g = self.map.goal
-        F[s[0]][s[1]] = self.heuristic_function(s, g)
+        F[s[0]][s[1]] = e * self.heuristic_function(s, g)
         G[s[0]][s[1]] = 0
 
         self.state = AlgorithmState.RUN
@@ -203,6 +191,7 @@ class Algorithm:
             self.AStarStateMachineStep(e)
 
     def ARAStar(self, e):
+        self.__AStarInit(e)
         print('Run ARAStar')
         s = self.map.start
         g = self.map.goal

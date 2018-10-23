@@ -6,12 +6,12 @@ class NodeState:
 
 class Node:
     COLOR_SOLUTION = '#12FF10'  # Green
-    COLOR_CLOSE = '#970E0E'  # Red đậm
+    COLOR_CLOSE = '#970E0E'  # Dark Red
     COLOR_OPEN = '#F6EC48'  # Yellow
     COLOR_START = '#0904FF'  # Blue
     COLOR_GOAL = '#FF070A'  # Red
-    COLOR_NONE = '#726E69'  # Gray
-    COLOR_OBSTACLE = '#000000'  # Black
+    COLOR_OBSTACLE = '#726E69'  # Gray
+    COLOR_NONE = '#000000'  # Black
     COLOR_DEFAULT = '#8e4216'  # Orange
 
     PADX = 1

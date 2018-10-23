@@ -5,20 +5,24 @@ class Map:
 
     CANVAS_WIDTH = 600
     CANVAS_HEIGHT = 600
+    MAX_GUI_SIZE = 100
 
-    def __init__(self, master):
+    def __init__(self, master, isGUI):
         self.graph = []
         self.rows = 0
         self.cols = 0
         self.start = (0, 0)
         self.goal = (0, 0)
-        self.canvas = tk.Canvas(master)
-        # self.canvas.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        if isGUI:
+            self.canvas = tk.Canvas(master, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT, background='bisque')
 
     def loadFromFile(self, filepath):
         file = open(filepath, 'r')
 
         n = int(file.readline().split()[0])
+        if hasattr(self, 'canvas') and not (1 <= n <= self.MAX_GUI_SIZE):
+            raise IOError('Map size must in range 1 <= size <= {}'.format(self.MAX_GUI_SIZE))
+
         self.rows = n
         self.cols = n
 
@@ -44,10 +48,10 @@ class Map:
         file.close()
 
     def createNode(self, row, col):
-        nodeWidth = self.CANVAS_WIDTH // self.cols
-        nodeHeight = self.CANVAS_HEIGHT // self.rows
+        self.nodeWidth = self.CANVAS_WIDTH / self.cols
+        self.nodeHeight = self.CANVAS_HEIGHT / self.rows
 
-        node = Node(row, col, nodeWidth, nodeHeight)
+        node = Node(row, col, self.nodeWidth, self.nodeHeight)
         return node
 
     def isValidPosition(self, row, col):
@@ -73,7 +77,8 @@ class Map:
                 self.graph[row][col].draw(self.canvas)
 
     def clear(self):
-        self.canvas.delete(tk.ALL)
+        if hasattr(self, 'canvas'):
+            self.canvas.delete(tk.ALL)
         self.graph = []
 
     def reset(self):
