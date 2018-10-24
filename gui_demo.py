@@ -3,7 +3,7 @@ from tkinter import filedialog
 from map import Map
 from algorithm import Algorithm, AlgorithmState
 from tkinter.messagebox import showerror
-
+import threading
 
 class Toolbar(tk.Frame):
     def __init__(self, master, map, eventHandler):
@@ -43,6 +43,9 @@ class Toolbar(tk.Frame):
         self.heuristic_option_menu = tk.OptionMenu(self, self.heuristic_option, *heuristic_option_list,
                                                    command=eventHandler.on_heuristic_change)
         self.heuristic_option_menu.pack(side=tk.LEFT, fill=tk.BOTH, pady=0)
+
+        self.buttonAra = tk.Button(self, text='ara', command=eventHandler.onARA)
+        self.buttonAra.pack(side=tk.LEFT)
 
     def setAvailability(self, isEnable):
         for name, button in self.buttons.items():
@@ -106,9 +109,11 @@ class Application(tk.Frame):
     def triggerStatusText(self, row, col):
         self.statusBar.textRow.set(str(row))
         self.statusBar.textCol.set(str(col))
-        self.statusBar.textF.set('{0:.2f}'.format(round(self.alg.F[row][col], 2)))
-        self.statusBar.textG.set('{0:.2f}'.format(round(self.alg.G[row][col], 2)))
-        self.statusBar.textH.set('{0:.2f}'.format(round(self.alg.heuristic_function((row, col), self.map.goal), 2)))
+
+        node = self.map.graph[row][col]
+        self.statusBar.textF.set('{0:.2f}'.format(round(node.F, 2)))
+        self.statusBar.textG.set('{0:.2f}'.format(round(node.G, 2)))
+        self.statusBar.textH.set('{0:.2f}'.format(round(node.calcH(self.alg.heuristic_function, self.map.goal), 2)))
 
     def on_step_button_click(self):
         self.alg.AStarStateMachineStep(1)
@@ -127,8 +132,11 @@ class Application(tk.Frame):
             del self.fast_forward_cb_id
 
     def fast_forward(self):
-        if self.alg.AStarStateMachineStep(1) != AlgorithmState.DONE:
+        if self.alg.AStarStateMachineStep() != AlgorithmState.DONE:
             self.fast_forward_cb_id = self.after(1, self.fast_forward)
+        else:
+            if hasattr(self, 'fast_forward_cb_id'):
+                del self.fast_forward_cb_id
 
 
     def on_load_map_button_click(self):
@@ -153,6 +161,11 @@ class Application(tk.Frame):
         self.alg.restart()
         self.toolbar.setAvailability(True)
         pass
+
+    def onARA(self):
+        print('Start algorithm...')
+        self.alg.ARAStar(5)
+        print('Finished')
 
 
 def run_app():

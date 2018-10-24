@@ -1,20 +1,19 @@
-import tkinter as tk
 # Tọa độ là (x,y): x: dòng ngang, y: cột dọc, khác với cách thể hiện đồ họa
 import math
-from node import NodeState
+import functools
 
 def heuristic_euclidean(start, goal):
-    return math.sqrt((start[0] - goal[0]) ** 2 + (start[1] - goal[1]) ** 2)
+    return math.sqrt((start.row - goal.row) ** 2 + (start.col - goal.col) ** 2)
 
 def heuristic_diagonal_distance(start, goal):
-    return max(math.fabs(start[0] - goal[0]), math.fabs(start[1] - goal[1]))
+    return max(math.fabs(start.row - goal.row), math.fabs(start.col - goal.col))
+
 
 class AlgorithmState:
     INIT = 0
     RUN = 1
     TRACE_SOLUTION = 2
     DONE = 3
-
 
 class Algorithm:
 
@@ -33,11 +32,16 @@ class Algorithm:
         self.closeVertices = []
         self.cameFrom = {}
         self.incons = []  # local inconsistency
-        self.G = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
-        self.F = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
+        self.coeff = 1
+
+        for rowNode in self.map.graph:
+            for node in rowNode:
+                node.G = self.infinity
+                node.F = self.infinity
+
 
     def onUpdateMap(self):
-        self.__AStarInit(1)
+        self.__AStarInit()
 
     def set_heuristic_function(self, func):
         self.heuristic_function = func
@@ -47,91 +51,53 @@ class Algorithm:
         self.state = AlgorithmState.INIT
 
     def reset(self):
-        self.__clearSolution()
-        self.__clearCloseVertices()
-        self.__clearOpenVertices()
+        while len(self.solution) != 0:
+            self.solution[0].removeFromSolutionVertices(self.solution)
+        while len(self.closeVertices) != 0:
+            self.closeVertices[0].removeFromCloseVertices(self.closeVertices)
+        while len(self.openVertices) != 0:
+            self.openVertices[0].removeFromOpenVertices(self.openVertices)
 
-    def AStarStateMachineStep(self, e):
+    def AStarStateMachineStep(self):
         if self.state == AlgorithmState.INIT:
-            self.__AStarInit(e)
+            self.__AStarInit()
         elif self.state == AlgorithmState.RUN:
-            self.__AStarStep(e)
+            self.__AStarStep()
         elif self.state == AlgorithmState.TRACE_SOLUTION:
             self.solution = self.__traceSolution()
         elif self.state == AlgorithmState.DONE:
             pass
         return self.state
 
-    def __appendOpenVertices(self, pos):
-        self.openVertices.append(pos)
-        self.map.graph[pos[0]][pos[1]].setState(NodeState.OPEN)
-
-    def __removeOpenVertices(self, pos):
-        self.openVertices.remove(pos)
-        self.map.graph[pos[0]][pos[1]].setState(NodeState.NONE)
-
-    def __clearOpenVertices(self):
-        for x in self.openVertices:
-            self.map.graph[x[0]][x[1]].setState(NodeState.NONE)
-        self.openVertices.clear()
-
-    def __appendCloseVertices(self, pos):
-        self.closeVertices.append(pos)
-        self.map.graph[pos[0]][pos[1]].setState(NodeState.CLOSE)
-
-    def __removeCloseVertices(self, pos):
-        self.closeVertices.remove(pos)
-        self.map.graph[pos[0]][pos[1]].setState(NodeState.NONE)
-
-    def __clearCloseVertices(self):
-        for x in self.closeVertices:
-            self.map.graph[x[0]][x[1]].setState(NodeState.NONE)
-        self.closeVertices.clear()
-
-    def __appendSolution(self, solution, pos):
-        solution.append(pos)
-        self.map.graph[pos[0]][pos[1]].setSolution(True)
-
-    def __removeSolution(self, pos):
-        self.solution.remove(pos)
-        self.map.graph[pos[0]][pos[1]].setSolution(False)
-
-    def __clearSolution(self):
-        for x in self.solution:
-            self.map.graph[x[0]][x[1]].setSolution(False)
-        self.solution.clear()
-
     def __fValueOfOpenVertices(self):
         if len(self.openVertices) == 0:
             return None
         current = self.openVertices[0]
         for u in self.openVertices:
-            if self.F[current[0]][current[1]] > self.F[u[0]][u[1]]:
+            if current.F > u.F:
                 current = u
         return current
 
-
-
-    def __AStarInit(self, e):
+    def __AStarInit(self):
         self.reset()
         self.cameFrom = {}
         self.incons = []  # local inconsistency
-        G = self.G = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
-        F = self.F = [[self.infinity for row in range(self.map.rows)] for col in range(self.map.cols)]
 
-        self.__appendOpenVertices(self.map.start)
+        for rowNode in self.map.graph:
+            for node in rowNode:
+                node.G = self.infinity
+                node.F = self.infinity
 
-        s = self.map.start
-        g = self.map.goal
-        F[s[0]][s[1]] = e * self.heuristic_function(s, g)
-        G[s[0]][s[1]] = 0
+        self.openVertices = []
+        self.map.start.addToOpenVertices(self.openVertices)
+
+        self.map.start.F = self.coeff * self.map.start.calcH(self.heuristic_function, self.map.goal)
+        self.map.start.G = 0
 
         self.state = AlgorithmState.RUN
 
-    def __AStarStep(self, e):
-        F = self.F
-        G = self.G
-        g = self.map.goal
+
+    def __AStarStep(self):
 
         if len(self.openVertices) == 0:
             self.state = AlgorithmState.DONE
@@ -142,87 +108,85 @@ class Algorithm:
             self.state = AlgorithmState.DONE
             return
 
-        if F[g[0]][g[1]] > F[self.current[0]][self.current[1]]:
+        if self.map.goal.F > self.current.F:
+            self.current.removeFromOpenVertices(self.openVertices)
+            self.current.addToCloseVertices(self.closeVertices)
 
-            self.__removeOpenVertices(self.current)
-            self.__appendCloseVertices(self.current)
-
-            for n in self.map.getVectorNeighborhood(self.current):
-                if not self.map.isObstacle(n[0], n[1]):
-                    if G[n[0]][n[1]] > G[self.current[0]][self.current[1]] + 1:
-                        G[n[0]][n[1]] = G[self.current[0]][self.current[1]] + 1
-                        F[n[0]][n[1]] = G[n[0]][n[1]] + e * self.heuristic_function(n, g)
-                        self.cameFrom[n] = self.current
+            neighbor = self.map.getVectorNeighborhood(self.current)
+            for n in neighbor:
+                if not n.isObstacle():
+                    if n.G > self.current.G + 1:
+                        n.G = self.current.G + 1
+                        n.F = n.G + self.coeff * n.calcH(self.heuristic_function, self.map.goal)
+                        n.setCameFrom(self.current)
                         if n not in self.closeVertices:
                             if n not in self.openVertices:
-                                self.__appendOpenVertices(n)
+                                n.addToOpenVertices(self.openVertices)
                         else:
                             self.incons.append(n)
-            self.current = self.__fValueOfOpenVertices()
-            if self.current == None:
-                self.state = AlgorithmState.TRACE_SOLUTION
+
+            # print(2)
+            # print(self.openVertices)
+            # self.current = self.__fValueOfOpenVertices()
+            #
+            # if self.current is None:
+            #     self.state = AlgorithmState.TRACE_SOLUTION
         else:
             self.state = AlgorithmState.TRACE_SOLUTION
 
     def __traceSolution(self):
         result = []
-        if self.map.goal in self.cameFrom:
-            x = self.map.goal
-            result.append(x)
-            while x in self.cameFrom:
-                x = self.cameFrom[x]
-                result.append(x)
+
+        if self.map.goal.cameFrom is not None:
+            self.map.goal.trace(result)
             result.reverse()
 
         if len(self.solution) == 0 or len(self.solution) > len(result):
-            # self.solution = result
-            self.__clearSolution()
-            for x in result:
-                self.__appendSolution(self.solution, x)
+            for x in self.solution:
+                x.removeFromSolutionVertices(self.solution)
 
-            # print(self.solution)
+            for x in result:
+                x.addToSolutionVertices(self.solution)
 
         self.state = AlgorithmState.DONE
 
         return result
 
-    def AStarOneShot(self, e):
-        while self.AStarStateMachineStep(e) != AlgorithmState.DONE:
-            self.AStarStateMachineStep(e)
+    def __fastForwardGUI(self):
+        if self.AStarStateMachineStep() != AlgorithmState.DONE:
+            self.fast_forward_id = self.map.canvas.after(1, self.__fastForwardGUI)
+
+    def __fastForwardNonGUI(self):
+        while self.AStarStateMachineStep() != AlgorithmState.DONE:
+            self.AStarStateMachineStep()
+
+    def __ARAStarInit(self, e):
+        self.coeff = e
+        self.__AStarInit()
+        print('Run ARAStar')
+
+        self.map.start.F = e * self.map.start.calcH(self.heuristic_function, self.map.goal)
+
+        # self.AStarOneShot(e)
+
 
     def ARAStar(self, e):
-        self.__AStarInit(e)
-        print('Run ARAStar')
-        s = self.map.start
-        g = self.map.goal
-
-        self.F[s[0]][s[1]] = e * self.heuristic_function(s, g)
-
-        self.AStarOneShot(e)
-        self.state = AlgorithmState.RUN
-
-        # while not stopFlag.is_set():
-        #     if e > 1:
-        #         e = e - 0.5
-        #         for x in self.incons:
-        #             self.__appendOpenVertices(x)
-        #         self.incons.clear()
-        #         for u in self.openVertices:
-        #             self.F[u[0]][u[1]] = self.G[u[0]][u[1]] + e * self.heuristic_function(u, g)
-        #         self.__clearCloseVertices()
-        #         self.AStarOneShot(e)
-        #         self.state = AlgorithmState.RUN
-        #     else:
-        #         stopFlag.wait()
-        while e > 1:
-            e = e - 0.5
-            for x in self.incons:
-                self.__appendOpenVertices(x)
-            self.incons.clear()
-            for u in self.openVertices:
-                self.F[u[0]][u[1]] = self.G[u[0]][u[1]] + e * self.heuristic_function(u, g)
-            self.__clearCloseVertices()
-            self.AStarOneShot(e)
+        if e > 1:
+            self.__fastForwardGUI()
             self.state = AlgorithmState.RUN
 
-        self.state = AlgorithmState.DONE
+            e = e - 0.5
+            for x in self.incons:
+                x.addToOpenVertices(self.openVertices)
+            self.incons.clear()
+            for u in self.openVertices:
+                u.F = u.G + e * u.calcH(self.heuristic_function, self.map.goal)
+            while len(self.closeVertices) != 0:
+                self.closeVertices[0].removeFromCloseVertices(self.closeVertices)
+            # self.AStarOneShot(e)
+            # self.__fastForwardGUI()
+            # self.state = AlgorithmState.RUN
+        else:
+            self.state = AlgorithmState.DONE
+            self.map.canvas.after_cancel(self.fast_forward_id)
+            del self.fast_forward_id

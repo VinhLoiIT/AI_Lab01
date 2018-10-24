@@ -18,19 +18,43 @@ class Node:
     PADY = 1
 
     def __init__(self, row, col, width, height):
+        # Graphics
         self.id = 0
         self.row = row
         self.col = col
         self.width = width
         self.height = height
         self.color = self.COLOR_DEFAULT
-
         self.canvas = None
+
+        # Logic
         self.state = NodeState.NONE
+        self.value = 0
+        self.cameFrom = None
         self.isSolution = False
         self.isStart = False
         self.isGoal = False
-        self.isObstacle = False
+        self._G = 0
+        self._F = 0
+
+
+
+    @property
+    def G(self):
+        return self._G
+
+    @G.setter
+    def G(self, value):
+        self._G = value
+
+    @property
+    def F(self):
+        return self._F
+
+    @F.setter
+    def F(self, value):
+        self._F = value
+
 
     def update(self, canvas):
         """I was drawn, I have had index, so just update me"""
@@ -52,7 +76,7 @@ class Node:
     def _getColor(self):
         color = self.COLOR_DEFAULT
 
-        if self.isObstacle:
+        if self.isObstacle():
             color = Node.COLOR_OBSTACLE
         else:
             color = Node.COLOR_NONE
@@ -72,19 +96,55 @@ class Node:
 
         return color
 
+    def setCameFrom(self, nodeBeforeThisNode):
+        self.cameFrom = nodeBeforeThisNode
+
     def __eq__(self, other):
         return self.row == other.row and self.col == other.col
+
+    def trace(self, resultList):
+        resultList.append(self)
+        if self.cameFrom is not None:
+            self.cameFrom.trace(resultList)
 
     def isState(self, state):
         return self.state == state
 
-    def setState(self, state):
-        self.state = state
+    def isObstacle(self):
+        return self.value == 1
+
+    def addToOpenVertices(self, openVertices):
+        openVertices.append(self)
+        self.state = NodeState.OPEN
         self.update(self.canvas)
 
-    def setSolution(self, isSolution):
-        self.isSolution = isSolution
+    def removeFromOpenVertices(self, openVertices):
+        openVertices.remove(self)
+        self.state = NodeState.NONE
         self.update(self.canvas)
+
+    def addToCloseVertices(self, closeVertices):
+        closeVertices.append(self)
+        self.state = NodeState.CLOSE
+        self.update(self.canvas)
+
+    def removeFromCloseVertices(self, closeVertices):
+        closeVertices.remove(self)
+        self.state = NodeState.NONE
+        self.update(self.canvas)
+
+    def addToSolutionVertices(self, solutionVertices):
+        solutionVertices.append(self)
+        self.isSolution = True
+        self.update(self.canvas)
+
+    def removeFromSolutionVertices(self, solutionVertices):
+        solutionVertices.remove(self)
+        self.isSolution = False
+        self.update(self.canvas)
+
+    def calcH(self, hFunction, otherNode):
+        return hFunction(self, otherNode)
 
     def reset(self):
         self.state = NodeState.NONE

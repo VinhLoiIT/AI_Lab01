@@ -11,8 +11,8 @@ class Map:
         self.graph = []
         self.rows = 0
         self.cols = 0
-        self.start = (0, 0)
-        self.goal = (0, 0)
+        self.start = None
+        self.goal = None
         if isGUI:
             self.canvas = tk.Canvas(master, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT, background='bisque')
 
@@ -27,47 +27,43 @@ class Map:
         self.cols = n
 
         sx, sy = [int(x) for x in file.readline().split()]
-        self.start = (sy, sx)
-
+        startRow, startCol = sy, sx
         gx, gy = [int(x) for x in file.readline().split()]
-        self.goal = (gy, gx)
-
+        goalRow, goalCol = gy, gx
         data = [[int(x) for x in line.split()] for line in file]
 
         self.clear()
         for row in range(len(data)):
             rowNode = []
             for col in range(len(data[row])):
-                node = self.createNode(row, col)
-                node.isObstacle = (data[row][col] == 1)
+                node = self.createNode(row, col, data[row][col])
                 rowNode.append(node)
             self.graph.append(rowNode)
 
-        self.graph[self.start[0]][self.start[1]].isStart = True
-        self.graph[self.goal[0]][self.goal[1]].isGoal = True
+        self.start = self.graph[startRow][startCol]
+        self.start.isStart = True
+        self.goal = self.graph[goalRow][goalCol]
+        self.goal.isGoal = True
         file.close()
 
-    def createNode(self, row, col):
+    def createNode(self, row, col, value):
         self.nodeWidth = self.CANVAS_WIDTH / self.cols
         self.nodeHeight = self.CANVAS_HEIGHT / self.rows
 
         node = Node(row, col, self.nodeWidth, self.nodeHeight)
+        node.value = value
         return node
 
     def isValidPosition(self, row, col):
         return 0 <= row < self.rows and 0 <= col < self.cols
 
-    def isObstacle(self, row, col):
-        return self.graph[row][col].isObstacle
-
-    def getVectorNeighborhood(self, pos):
+    def getVectorNeighborhood(self, node):
         dis = [(-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1)]
         n = []
 
         for i, j in dis:
-            p = (pos[0] + i, pos[1] + j)
-            if self.isValidPosition(p[0], p[1]):
-                n.append(p)
+            if self.isValidPosition(node.row + i, node.col + j):
+                n.append(self.graph[node.row + i][node.col + j])
 
         return n
 
