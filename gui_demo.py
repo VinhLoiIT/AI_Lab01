@@ -3,7 +3,7 @@ from tkinter import filedialog
 from map import UIMap
 from algorithm import UIAStarAlgorithm, HeuristicFunction, UIARAAlgorithm
 from tkinter.messagebox import showerror
-import threading
+from tkinter import simpledialog
 
 class Toolbar(tk.Frame):
     def __init__(self, master, eventHandler):
@@ -21,11 +21,6 @@ class Toolbar(tk.Frame):
         self.buttons['step'].config(image=self.buttons['step'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.buttons['step'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
-        self.buttons['ara'] = tk.Button(self, text='ARA', command=eventHandler.on_ara_button_click)
-        self.buttons['ara'].icon = tk.PhotoImage(file='./images/play.png')
-        self.buttons['ara'].config(image=self.buttons['ara'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['ara'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
-
         self.buttons['pause'] = tk.Button(self, text='Pause', command=eventHandler.on_pause_button_click)
         self.buttons['pause'].icon = tk.PhotoImage(file='./images/pause.png')
         self.buttons['pause'].config(image=self.buttons['pause'].icon, compound=tk.LEFT, state=tk.DISABLED)
@@ -35,6 +30,11 @@ class Toolbar(tk.Frame):
         self.buttons['fastforward'].icon = tk.PhotoImage(file='./images/next.png')
         self.buttons['fastforward'].config(image=self.buttons['fastforward'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.buttons['fastforward'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+
+        self.buttons['ara'] = tk.Button(self, text='ARA', command=eventHandler.on_ara_button_click)
+        self.buttons['ara'].icon = tk.PhotoImage(file='./images/next.png')
+        self.buttons['ara'].config(image=self.buttons['ara'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.buttons['ara'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
         self.buttons['restart'] = tk.Button(self, text='Restart', command=eventHandler.on_restart_button_click)
         self.buttons['restart'].icon = tk.PhotoImage(file='./images/refresh.png')
@@ -96,6 +96,8 @@ class Application(tk.Frame):
         self.statusBar.pack(side=tk.TOP, fill=tk.BOTH)
 
         self.map = None
+        self.alg = None
+
         currentHeuristicKey = list(HeuristicFunction.keys())[0]
         self.currentHeuristic = HeuristicFunction[currentHeuristicKey]
 
@@ -123,6 +125,9 @@ class Application(tk.Frame):
         self.statusBar.textH.set('{0:.2f}'.format(round(node.calcH(self.alg.heuristicFunction, self.map.goal), 2)))
 
     def on_step_button_click(self):
+        if self.alg is None:
+            # run AStar by default
+            self.alg = UIAStarAlgorithm(self.map, self.currentHeuristic)
         self.alg.step()
 
     def on_heuristic_change(self, heuristic_name):
@@ -132,10 +137,13 @@ class Application(tk.Frame):
             self.alg.setHeuristicFunction(self.currentHeuristic)
 
     def on_fast_forward_button_click(self):
+        if self.alg is None:
+            self.alg = UIAStarAlgorithm(self.map, self.currentHeuristic)
         self.alg.fastForward()
 
     def on_pause_button_click(self):
-        self.alg.pause()
+        if self.alg is not None:
+            self.alg.pause()
 
     def on_load_map_button_click(self):
         file_path = filedialog.askopenfilename(initialdir='./',
@@ -148,14 +156,11 @@ class Application(tk.Frame):
             try:
                 if self.map is None:
                     self.map = UIMap(self)
-                    self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
-                    self.map.canvas.bind('<Motion>', self.onMouseMove)
                 self.map.clear()
                 self.map.loadFromFile(file_path)
                 self.map.draw()
-
-                self.alg = UIAStarAlgorithm(self.map, self.currentHeuristic)
-
+                self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
+                self.map.canvas.bind('<Motion>', self.onMouseMove)
                 self.toolbar.setAvailability(True)
             except IOError as err:
                 showerror('Error', err)
@@ -165,15 +170,18 @@ class Application(tk.Frame):
         self.toolbar.setAvailability(False)
         self.alg.reset()
         self.toolbar.setAvailability(True)
-        pass
 
     def on_ara_button_click(self):
-        print('Start algorithm...')
-        self.alg = UIARAAlgorithm(self.map, self.currentHeuristic)
-        self.alg.setCoeff(3)
-        self.alg.setTimeLimit(5)
-        self.alg.fastForward()
-        print('Finished')
+        if self.alg is not UIARAAlgorithm:
+            coeff = simpledialog.askfloat('Set coefficient', 'Coefficient', parent=self)
+            if coeff is not None:
+                print('Start algorithm...')
+                # timelimit = 1
+                self.alg = UIARAAlgorithm(self.map, self.currentHeuristic)
+                self.alg.setCoeff(coeff)
+                # self.alg.setLimitedTime(timelimit)
+                self.alg.fastForward()
+                # self.after(timelimit, self.alg.stop)
 
 
 def run_app():

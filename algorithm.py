@@ -94,6 +94,7 @@ class AStarAlgorithm(StateMachine):
         self.clearCloseVertices()
         self.clearSolution()
         self.state = AlgorithmState.INIT
+        self.map.reset()
 
     def setCoeff(self, coeff):
         self.coeff = coeff
@@ -168,8 +169,8 @@ class AStarAlgorithm(StateMachine):
             result.reverse()
 
         if len(self.solution) == 0 or len(self.solution) > len(result):
-            for x in self.solution:
-                x.removeFromSolutionVertices(self.solution)
+            print(len(result))
+            self.clearSolution()
 
             for x in result:
                 x.addToSolutionVertices(self.solution)
@@ -246,32 +247,44 @@ class UIARAAlgorithm(UIAStarAlgorithm):
 
     def __init__(self, map: UIMap, heuristic_function=heuristic_euclidean):
         super().__init__(map, heuristic_function)
+        self.stopFlag = threading.Event()
+        self.isRunning = False
 
     def fastForward(self):
-        if not hasattr(self, 'fast_forward_cb_id'):
-            araThread = threading.Thread(target=self.run)
-            araThread.daemon = True
-            araThread.start()
-            araThread.join(self.time)
+        if not self.isRunning:
+            self.isRunning = True
+            self.thread = threading.Thread(target=self.runInThread)
+            self.thread.daemon = True
+            self.thread.start()
+            self.map.canvas.after(1, self.onThreadStop)
 
-    def setTimeLimit(self, time):
-        self.time = time
+    def onThreadStop(self):
+        if self.stopFlag.isSet():
+            self.thread.join()
+            self.isRunning = False
+            self.stopFlag.clear()
+        else:
+            self.map.canvas.after(1, self.onThreadStop)
+
+    def runInThread(self):
+        while not self.stopFlag.isSet() and self.coeff > 1:
+            self.run()
+        self.stopFlag.set()
 
     def run(self):
-        if self.state != AlgorithmState.DONE:
-            super().run()
-        elif self.coeff > 1:
-            self.coeff = self.coeff - 0.5
+        if self.coeff > 1:
+            while self.state != AlgorithmState.DONE:
+                super().step()
+            self.setState(AlgorithmState.RUN)
+            self.coeff = self.coeff - 0.05
 
             for x in self.incons:
                 x.addToOpenVertices(self.openVertices)
             self.incons.clear()
             for u in self.openVertices:
                 u.F = u.G + self.coeff * u.calcH(self.heuristicFunction, self.map.goal)
-            while len(self.closeVertices) != 0:
-                self.closeVertices[0].removeFromCloseVertices(self.closeVertices)
+            self.clearCloseVertices()
 
-            self.setState(AlgorithmState.RUN)
 
 
 

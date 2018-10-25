@@ -1,8 +1,9 @@
 import tkinter as tk
 from node import Node, UINode
 
-class Map:
 
+class Map:
+    """This class is a logical map. Nothing to do with graphics here"""
     def __init__(self):
         self.graph = []
         self.rows = 0
@@ -69,7 +70,6 @@ class Map:
                     print(end=' ', file=file)
                 print(file=file)
 
-
     def createNode(self, row, col, totalRows, totalCols, value):
         node = Node(row, col, value)
         return node
@@ -84,6 +84,7 @@ class Map:
 
 
 class UIMap(Map):
+    """This class provide graphical user interface for Map"""
     CANVAS_WIDTH = 600
     CANVAS_HEIGHT = 600
     MAX_GUI_SIZE = 100
@@ -103,7 +104,6 @@ class UIMap(Map):
                 node.draw(self.canvas)
 
     def createNode(self, row, col, totalRows, totalCols, value):
-
         self.nodeWidth = self.CANVAS_WIDTH / totalCols
         self.nodeHeight = self.CANVAS_HEIGHT / totalRows
 

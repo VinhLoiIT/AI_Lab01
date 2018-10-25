@@ -5,9 +5,9 @@ class NodeState:
 
 
 class Node:
+    """This class provide logical structure of a node"""
 
     def __init__(self, row: int, col: int, value: int):
-        # Logic
         self.row = row
         self.col = col
         self.state = NodeState.NONE
@@ -16,24 +16,8 @@ class Node:
         self.isSolution = False
         self.isStart = False
         self.isGoal = False
-        self._G = 0
-        self._F = 0
-
-    @property
-    def G(self):
-        return self._G
-
-    @G.setter
-    def G(self, value):
-        self._G = value
-
-    @property
-    def F(self):
-        return self._F
-
-    @F.setter
-    def F(self, value):
-        self._F = value
+        self.G = 0
+        self.F = 0
 
     def setCameFrom(self, nodeBeforeThisNode):
         self.cameFrom = nodeBeforeThisNode
@@ -46,37 +30,41 @@ class Node:
         if self.cameFrom is not None:
             self.cameFrom.trace(resultList)
 
-    def isState(self, state):
-        return self.state == state
-
     def isObstacle(self):
         return self.value == 1
 
     def addToOpenVertices(self, openVertices):
+        """Tell, don't ask rule: Let me self-adding to the list!"""
         openVertices.append(self)
         self.state = NodeState.OPEN
 
     def removeFromOpenVertices(self, openVertices):
+        """Tell, don't ask rule: Let me self-removing from the list!"""
         openVertices.remove(self)
         self.state = NodeState.NONE
 
     def addToCloseVertices(self, closeVertices):
+        """Tell, don't ask rule: Let me self-adding to the list!"""
         closeVertices.append(self)
         self.state = NodeState.CLOSE
 
     def removeFromCloseVertices(self, closeVertices):
+        """Tell, don't ask rule: Let me self-removing from the list!"""
         closeVertices.remove(self)
         self.state = NodeState.NONE
 
     def addToSolutionVertices(self, solutionVertices):
+        """Tell, don't ask rule: Let me self-adding to the list!"""
         solutionVertices.append(self)
         self.isSolution = True
 
     def removeFromSolutionVertices(self, solutionVertices):
+        """Tell, don't ask rule: Let me self-removing from the list!"""
         solutionVertices.remove(self)
         self.isSolution = False
 
     def calcH(self, hFunction, otherNode):
+        """Tell, don't ask rule: Let me calculate heuristic value by myself"""
         return hFunction(self, otherNode)
 
     def reset(self):
@@ -84,6 +72,7 @@ class Node:
         self.isSolution = False
 
     def exportFile(self, file):
+        """Tell, don't ask rule: Gimme an opened file, I will write myself"""
         if self.isStart:
             c = 'S'
         elif self.isGoal:
@@ -98,6 +87,7 @@ class Node:
 
 
 class UINode(Node):
+    """This class provide graphical user interface of a node"""
     COLOR_SOLUTION = '#12FF10'  # Green
     COLOR_CLOSE = '#970E0E'  # Dark Red
     COLOR_OPEN = '#F6EC48'  # Yellow
@@ -135,6 +125,8 @@ class UINode(Node):
     def reset(self):
         super().reset()
         self.color = self.COLOR_DEFAULT
+        self.F = 0
+        self.G = 0
         self.update()
 
     def addToOpenVertices(self, openVertices):
