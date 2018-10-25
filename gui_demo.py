@@ -176,12 +176,9 @@ class Application(tk.Frame):
             coeff = simpledialog.askfloat('Set coefficient', 'Coefficient', parent=self)
             if coeff is not None:
                 print('Start algorithm...')
-                # timelimit = 1
                 self.alg = UIARAAlgorithm(self.map, self.currentHeuristic)
                 self.alg.setCoeff(coeff)
-                # self.alg.setLimitedTime(timelimit)
                 self.alg.fastForward()
-                # self.after(timelimit, self.alg.stop)
 
 
 def run_app():
