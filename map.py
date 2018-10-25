@@ -97,9 +97,6 @@ class UIMap(Map):
         if not (1 <= self.rows <= self.MAX_GUI_SIZE and 1 <= self.cols <= self.MAX_GUI_SIZE):
             raise IOError('Map size must in range 1 <= size <= {}'.format(self.MAX_GUI_SIZE))
 
-    def clear(self):
-        self.canvas.delete(tk.ALL)
-
     def draw(self):
         for rowNode in self.graph:
             for node in rowNode:

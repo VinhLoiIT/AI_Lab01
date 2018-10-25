@@ -170,7 +170,7 @@ class Application(tk.Frame):
     def on_ara_button_click(self):
         print('Start algorithm...')
         self.alg = UIARAAlgorithm(self.map, self.currentHeuristic)
-        self.alg.setCoeff(5)
+        self.alg.setCoeff(3)
         self.alg.setTimeLimit(5)
         self.alg.fastForward()
         print('Finished')
