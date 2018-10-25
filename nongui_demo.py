@@ -1,19 +1,19 @@
-from algorithm import Algorithm
+from algorithm import *
 from map import Map
 import threading
 
 def loadMap(inputFileName):
     print('Loading map...')
-    algMap = Map(None, False)
+    algMap = Map()
     algMap.loadFromFile(inputFileName)
     return algMap
 
 def applyingHeuristicFunction(heuristicKey):
     print('Applying heuristic function...')
     if heuristicKey == 'euclidean':
-        heuristicFunction = Algorithm.HeuristicFunction['Euclidean Distance']
+        heuristicFunction = HeuristicFunction['Euclidean Distance']
     else:
-        heuristicFunction = Algorithm.HeuristicFunction['Diagonal Distance']
+        heuristicFunction = HeuristicFunction['Diagonal Distance']
     return heuristicFunction
 
 def writeFile(outputFileName, map, result):
@@ -21,7 +21,7 @@ def writeFile(outputFileName, map, result):
     print(len(result), file=file)
     if len(result) != 0:
         for x in result:
-            print(x, file=file, end=' ')
+            print('({0}, {1})'.format(x.row, x.col), end=' ', file=file)
         print(file=file)
         map.exportFile(file)
 
@@ -32,8 +32,8 @@ def run_nongui_astar(args):
     heuristicFunction = applyingHeuristicFunction(args.heuristic)
 
     print('Starting algorithm...')
-    alg = Algorithm(algMap, heuristicFunction)
-    alg.AStarOneShot(1)
+    alg = AStarAlgorithm(algMap, heuristicFunction)
+    alg.run()
     print('Algorithm finished. Writing to file...')
     writeFile(args.output, algMap, alg.solution)
     print('Done')
@@ -43,9 +43,11 @@ def run_nongui_ara(args):
     algMap = loadMap(args.input)
     heuristicFunction = applyingHeuristicFunction(args.heuristic)
 
+    alg = ARAAlgorithm(algMap, heuristicFunction)
+    alg.setCoeff(args.coeff)
+
     print('Start algorithm...')
-    alg = Algorithm(algMap, heuristicFunction)
-    araThread = threading.Thread(target=Algorithm.ARAStar, args=(alg, args.coeff))
+    araThread = threading.Thread(target=alg.run)
     araThread.daemon = True
     araThread.start()
     araThread.join(args.time)
