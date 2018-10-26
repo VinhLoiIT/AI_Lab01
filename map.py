@@ -11,13 +11,24 @@ class Map:
         self.start = None
         self.goal = None
 
+    def isValidMapSize(self, totalRows, totalCols):
+        return totalRows > 0 and totalCols > 0
+
+    def isValidPosition(self, row, col):
+        return 0 <= row < self.rows and 0 <= col < self.cols
+
+    def isMapLoaded(self):
+        return self.isValidMapSize(self.rows, self.cols)
+
     def loadFromFile(self, filepath):
         file = open(filepath, 'r')
 
         n = int(file.readline().split()[0])
-
         rows = n
         cols = n
+
+        if not self.isValidMapSize(rows, cols):
+            raise IOError('Invalid map size')
 
         sx, sy = [int(x) for x in file.readline().split()]
         startRow, startCol = sy, sx
@@ -31,6 +42,8 @@ class Map:
 
     def __load(self, rows, cols, startRow, startCol, goalRow, goalCol, graph):
         self.clear()
+        self.rows = rows
+        self.cols = cols
         for row in range(len(graph)):
             rowNode = []
             for col in range(len(graph[row])):
@@ -49,8 +62,6 @@ class Map:
         self.goal = self.graph[goalRow][goalCol]
         self.goal.isGoal = True
 
-    def isValidPosition(self, row, col):
-        return 0 <= row < self.rows and 0 <= col < self.cols
 
     def getVectorNeighborhood(self, node):
         dis = [(-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1)]
@@ -92,11 +103,16 @@ class UIMap(Map):
     def __init__(self, master):
         super().__init__()
         self.canvas = tk.Canvas(master, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT, background='bisque')
+        self.canvas.pack(side=tk.TOP, fill=tk.BOTH)
+        self.canvas.bind('<Motion>', self.onMouseMove)
 
-    def loadFromFile(self, filepath):
-        super().loadFromFile(filepath)
-        if not (1 <= self.rows <= self.MAX_GUI_SIZE and 1 <= self.cols <= self.MAX_GUI_SIZE):
-            raise IOError('Map size must in range 1 <= size <= {}'.format(self.MAX_GUI_SIZE))
+        self.callbackMouseMove = None
+
+    def setCallbackMouseMove(self, callback):
+        self.callbackMouseMove = callback
+
+    def isValidMapSize(self, totalRows, totalCols):
+        return 1 <= totalRows <= self.MAX_GUI_SIZE and 1 <= totalCols <= self.MAX_GUI_SIZE
 
     def draw(self):
         for rowNode in self.graph:
@@ -113,3 +129,18 @@ class UIMap(Map):
     def clear(self):
         super().clear()
         self.canvas.delete(tk.ALL)
+
+    def onMouseMove(self, _):
+        if self.isMapLoaded():
+            nodeId = self.canvas.find_withtag(tk.CURRENT)
+            coord = self.canvas.coords(nodeId)
+            if len(coord) != 0:
+                x = coord[0]
+                y = coord[1]
+                row = int(y / self.nodeWidth)
+                col = int(x / self.nodeHeight)
+                if self.callbackMouseMove is not None:
+                    self.callbackMouseMove(self.graph[row][col])
+
+
+
