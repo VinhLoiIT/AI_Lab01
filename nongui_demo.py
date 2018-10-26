@@ -11,9 +11,9 @@ def loadMap(inputFileName):
 def applyingHeuristicFunction(heuristicKey):
     print('Applying heuristic function...')
     if heuristicKey == 'euclidean':
-        heuristicFunction = HeuristicFunction['Euclidean Distance']
+        heuristicFunction = HeuristicFunctions['Euclidean Distance']
     else:
-        heuristicFunction = HeuristicFunction['Diagonal Distance']
+        heuristicFunction = HeuristicFunctions['Diagonal Distance']
     return heuristicFunction
 
 def writeFile(outputFileName, map, result):
