@@ -94,81 +94,115 @@ class UINode(Node):
     COLOR_START = '#0904FF'  # Blue
     COLOR_GOAL = '#FF070A'  # Red
     COLOR_OBSTACLE = '#726E69'  # Gray
-    COLOR_NONE = '#000000'  # Black
-    COLOR_DEFAULT = '#8e4216'  # Orange
+    COLOR_NONE = '#8e4216'  # Orange
 
-    PADX = 1
-    PADY = 1
+    PADX = 2
+    PADY = 2
 
     def __init__(self, row, col, value, width, height):
         super().__init__(row, col, value)
         self.width = width
         self.height = height
-        self.color = self.COLOR_DEFAULT
         self.canvas = None
-        self.id = -1
+        self.idContent = -1
+        self.idBackground = -1
+
+    def drawBackground(self):
+        x0, y0, x1, y1 = self.bbox()
+        self.idBackground = self.canvas.create_rectangle(x0, y0, x1, y1, fill=self._getColorBackground())
+
+    def drawContent(self):
+        x0, y0, x1, y1 = self.bboxContent()
+        self.idContent = self.canvas.create_rectangle(x0, y0, x1, y1, fill=self._getColorBackground())
 
     def draw(self, canvas):
         """"Draw me on canvas"""
         if canvas:
-            x0 = self.col * self.width
-            y0 = self.row * self.height
-            x1 = x0 + self.width
-            y1 = y0 + self.height
             self.canvas = canvas
-            self.id = canvas.create_rectangle(x0, y0, x1, y1, fill=self._getColor())
+            self.drawBackground()
+            self.drawContent()
+
+    def updateContent(self):
+        if self.idContent != -1:
+            self.canvas.itemconfigure(self.idContent, fill=self._getColorContent())
+
+    def updateBackground(self):
+        self.canvas.itemconfigure(self.idBackground, fill=self._getColorBackground())
 
     def update(self):
         """I was drawn, I have had an id, so just update me"""
-        self.canvas.itemconfigure(self.id, fill=self._getColor())
+        # self.canvas.itemconfigure(self.id, fill=self._getColorBackground())
+        self.updateBackground()
+        self.updateContent()
 
     def reset(self):
         super().reset()
-        self.color = self.COLOR_DEFAULT
+        self.color = self.COLOR_NONE
         self.F = 0
         self.G = 0
         self.update()
 
+    def bbox(self):
+        x0 = self.col * self.width + self.PADX
+        y0 = self.row * self.height + self.PADY
+        x1 = x0 + self.width
+        y1 = y0 + self.height
+
+        return x0, y0, x1, y1
+
+    def bboxContent(self):
+        x0, y0, x1, y1 = self.bbox()
+        x0 = x0 + self.PADX
+        y0 = y0 + self.PADY
+        x1 = x1 - self.PADX
+        y1 = y1 - self.PADY
+        return x0, y0, x1, y1
+
     def addToOpenVertices(self, openVertices):
         super().addToOpenVertices(openVertices)
-        self.update()
+        self.updateContent()
 
     def removeFromOpenVertices(self, openVertices):
         super().removeFromOpenVertices(openVertices)
-        self.update()
+        self.updateContent()
 
     def addToCloseVertices(self, closeVertices):
         super().addToCloseVertices(closeVertices)
-        self.update()
+        self.updateContent()
 
     def removeFromCloseVertices(self, closeVertices):
         super().removeFromCloseVertices(closeVertices)
-        self.update()
+        self.updateContent()
+
 
     def addToSolutionVertices(self, solutionVertices):
         super().addToSolutionVertices(solutionVertices)
-        self.update()
+        self.updateContent()
+
 
     def removeFromSolutionVertices(self, solutionVertices):
         super().removeFromSolutionVertices(solutionVertices)
-        self.update()
+        self.updateContent()
 
-    def _getColor(self):
 
+    def _getColorBackground(self):
         if self.isObstacle():
             color = self.COLOR_OBSTACLE
-        else:
-            color = self.COLOR_NONE
-
-        if self.isStart:
+        elif self.isStart:
             color = self.COLOR_START
         elif self.isGoal:
             color = self.COLOR_GOAL
+        else:
+            color = self.COLOR_NONE
+        return color
 
+    def _getColorContent(self):
         if self.state == NodeState.OPEN:
             color = self.COLOR_OPEN
         elif self.state == NodeState.CLOSE:
             color = self.COLOR_CLOSE
+        else:
+            color = self._getColorBackground()
 
         if self.isSolution:
             color = self.COLOR_SOLUTION
