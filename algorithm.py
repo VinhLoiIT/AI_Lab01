@@ -273,7 +273,7 @@ class ARAAlgorithm(AStarAlgorithm):
 
     def __init__(self, heuristic_function=HeuristicFunctions['Euclidean Distance']):
         super().__init__(heuristic_function)
-        self.setCoeff(1.5)
+        self.setCoeff(2)
         self.delta = -0.05
 
     def run(self):
