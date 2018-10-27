@@ -1,8 +1,5 @@
-# Tọa độ là (x,y): x: dòng ngang, y: cột dọc, khác với cách thể hiện đồ họa
 import math
 from map import Map, UIMap
-import threading
-import time
 
 def heuristic_euclidean(start, goal):
     return math.sqrt((start.row - goal.row) ** 2 + (start.col - goal.col) ** 2)
@@ -59,16 +56,16 @@ class StateMachine:
 
     def run(self):
         while self.state != AlgorithmState.DONE:
-            self.state = self.step()
+            self.step()
 
 
 class AStarAlgorithm(StateMachine):
 
     infinity = 1000000
 
-    def __init__(self, map: Map, heuristic_function=heuristic_euclidean):
+    def __init__(self, heuristic_function=heuristic_euclidean):
         super().__init__()
-        self.map = map
+        self.map = Map()
         self.state = AlgorithmState.INIT
         self.heuristicFunction = heuristic_function
         self.openVertices = []
@@ -90,12 +87,13 @@ class AStarAlgorithm(StateMachine):
         while len(self.openVertices) != 0:
             self.openVertices[0].removeFromOpenVertices(self.openVertices)
 
-    def reset(self):
+    def restart(self):
         self.clearOpenVertices()
         self.clearCloseVertices()
         self.clearSolution()
+        if self.map is not None and self.state != AlgorithmState.INIT:
+            self.map.reset()
         self.state = AlgorithmState.INIT
-        self.map.reset()
 
     def setMap(self, map):
         self.map = map
@@ -105,10 +103,6 @@ class AStarAlgorithm(StateMachine):
 
     def setHeuristicFunction(self, func):
         self.heuristicFunction = func
-
-    def run(self):
-        while self.state != AlgorithmState.DONE:
-            self.step()
 
     def stateInit(self):
         super().stateInit()
@@ -173,7 +167,6 @@ class AStarAlgorithm(StateMachine):
             result.reverse()
 
         if len(self.solution) == 0 or len(self.solution) > len(result):
-            print('E = ', self.coeff, len(result))
             self.clearSolution()
 
             for x in result:
@@ -197,29 +190,58 @@ class AStarAlgorithm(StateMachine):
     def getSolution(self):
         return self.solution
 
+    def exportFile(self, filePath):
+        file = open(filePath, 'w')
+        print(len(self.solution), file=file)
+        if len(self.solution) != 0:
+            for x in self.solution:
+                print('({0}, {1})'.format(x.row, x.col), end=' ', file=file)
+            print(file=file)
+            self.map.exportFile(file)
+
+        file.close()
+
 
 class UIAStarAlgorithm(AStarAlgorithm):
 
-    def __init__(self, map: UIMap, heuristic_function=heuristic_euclidean):
-        super().__init__(map, heuristic_function)
-        self.solutionCallback = None
+    def __init__(self, heuristic_function=heuristic_euclidean):
+        super().__init__(heuristic_function)
+        self.__isStop = False
+        self.__callbackDone = []
+        self.__callbackStatusNode = []
+
+    def setMap(self, map: UIMap):
+        super().setMap(map)
+        self.map.registerCallbackMouseMove(self.onShowStatus)
 
     def __cancelFastForward(self):
         if hasattr(self, 'fast_forward_cb_id'):
             self.map.canvas.after_cancel(self.fast_forward_cb_id)
             del self.fast_forward_cb_id
 
+    def isStop(self):
+        return self.__isStop
+
+    def restart(self):
+        super().restart()
+        self.__isStop = False
+
     def reset(self):
-        super().reset()
-        self.__cancelFastForward()
+        self.stop()
+        self.restart()
+        self.__callbackDone.clear()
+        self.__callbackStatusNode.clear()
 
     def run(self):
-        if self.state != AlgorithmState.DONE:
+        if not self.isStop() and self.state != AlgorithmState.DONE:
             super().step()
             self.fast_forward_cb_id = self.map.canvas.after(1, self.run)
-        elif self.solutionCallback is not None:
-            self.solutionCallback(self.solution)
+        else:
+            self.onAlgorithmDone()
 
+    def step(self):
+        if not self.isStop():
+            super().step()
 
     def fastForward(self):
         if not hasattr(self, 'fast_forward_cb_id'):
@@ -228,20 +250,38 @@ class UIAStarAlgorithm(AStarAlgorithm):
     def pause(self):
         self.__cancelFastForward()
 
-    def setSolutionCallback(self, callback):
-        self.solutionCallback = callback
+    def stop(self):
+        self.__isStop = True
+        self.__cancelFastForward()
+
+    def registerCallbackDone(self, callback):
+        self.__callbackDone.append(callback)
+
+    def registerStatusNodeCallback(self, callback):
+        self.__callbackStatusNode.append(callback)
+
+    def onAlgorithmDone(self):
+        for callback in self.__callbackDone:
+            callback(self.getSolution())
+
+    def onShowStatus(self, node):
+        for callback in self.__callbackStatusNode:
+            callback(node, node.calcH(self.heuristicFunction, self.map.goal))
+
 
 class ARAAlgorithm(AStarAlgorithm):
 
-    def __init__(self, map, heuristic_function=HeuristicFunctions['Euclidean Distance']):
-        super().__init__(map, heuristic_function)
+    def __init__(self, heuristic_function=HeuristicFunctions['Euclidean Distance']):
+        super().__init__(heuristic_function)
+        self.setCoeff(1.5)
+        self.delta = -0.05
 
     def run(self):
-        while self.coeff > 1:
+        while self.coeff >= 1:
             super().run()
             self.state = AlgorithmState.RUN
 
-            self.coeff = self.coeff - 0.5
+            self.coeff = self.coeff + self.delta
             for x in self.incons:
                 x.addToOpenVertices(self.openVertices)
             self.incons.clear()
@@ -251,61 +291,3 @@ class ARAAlgorithm(AStarAlgorithm):
                 self.closeVertices[0].removeFromCloseVertices(self.closeVertices)
             self.run()
             self.state = AlgorithmState.RUN
-
-
-class UIARAAlgorithm(UIAStarAlgorithm):
-
-    def __init__(self, map: UIMap, heuristic_function=heuristic_euclidean):
-        super().__init__(map, heuristic_function)
-        super().setCoeff(1.5)
-        self.stopFlag = threading.Event()
-        self.pauseFlag = threading.Event()
-        self.isRunning = False
-
-    def reset(self):
-        super().reset()
-        self.stopFlag.set()
-        self.isRunning = False
-
-    def fastForward(self):
-        if not self.isRunning:
-            self.isRunning = True
-            self.stopFlag.clear()
-            self.thread = threading.Thread(target=self.runInThread)
-            self.thread.daemon = True
-            self.thread.start()
-            self.onThreadStop()
-
-    def onThreadStop(self):
-        if self.stopFlag.isSet():
-            self.thread.join()
-            self.isRunning = False
-            self.stopFlag.clear()
-        else:
-            self.map.canvas.after(10, self.onThreadStop)
-
-    def runInThread(self):
-        while not self.stopFlag.isSet() and self.coeff > 1:
-            self.step()
-        self.stopFlag.set()
-
-    def step(self):
-        if self.coeff > 1:
-            start = time.time()
-            while self.state != AlgorithmState.DONE:
-                super().step()
-            end = time.time()
-            print('A*: ', end - start)
-            self.setState(AlgorithmState.RUN)
-            self.coeff = self.coeff - 0.05
-
-            for x in self.incons:
-                x.addToOpenVertices(self.openVertices)
-            self.incons.clear()
-            for u in self.openVertices:
-                u.F = u.G + self.coeff * u.calcH(self.heuristicFunction, self.map.goal)
-            self.clearCloseVertices()
-
-    def pause(self):
-        self.stopFlag.set()
-        self.isRunning = False

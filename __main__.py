@@ -1,7 +1,7 @@
 import argparse
 from gui_demo import run_app
-from nongui_demo import run_nongui_ara, run_nongui_astar
-
+from nongui_demo import run_nongui_algorithm
+from algorithm import AStarAlgorithm, ARAAlgorithm, HeuristicFunctions
 
 if __name__ == '__main__':
 
@@ -24,25 +24,31 @@ if __name__ == '__main__':
                               type=str,
                               choices=['euclidean', 'diagonal'],
                               default='euclidean')
-    astar_parser.set_defaults(func=run_nongui_astar)
+    astar_parser.set_defaults(time=None)
 
     ara_parser = subparsers.add_parser('ara')
     ara_parser.add_argument('-i', '--input', help='Path to input file', type=str)
     ara_parser.add_argument('-o', '--output', help='Path to output file', type=str)
-    ara_parser.add_argument('-c', '--coeff', help='Coefficient of heuristic function', type=float, default=3)
     ara_parser.add_argument('-hf', '--heuristic',
                               help='Heuristic function',
                               type=str,
                               choices=['euclidean', 'diagonal'],
                               default='euclidean')
-    ara_parser.add_argument('-t', '--time', help='Time limitation (in second)', type=float, default=3)
-    ara_parser.set_defaults(func=run_nongui_ara)
+    ara_parser.add_argument('-t', '--time', help='Time limitation (in milliseconds)', type=float, default=50)
+    ara_parser.set_defaults()
 
     args = parser.parse_args()
 
     if args.command == 'gui':
         run_app()
-    elif args.command == 'astar':
-        run_nongui_astar(args)
-    elif args.command == 'ara':
-        run_nongui_ara(args)
+    else:
+        if args.heuristic == 'euclidean':
+            heuristicFunction = HeuristicFunctions['Euclidean Distance']
+        else:
+            heuristicFunction = HeuristicFunctions['Diagonal Distance']
+
+        if args.command == 'ara':
+            alg = ARAAlgorithm(heuristicFunction)
+        else:
+            alg = AStarAlgorithm(heuristicFunction)
+        run_nongui_algorithm(alg, args)

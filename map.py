@@ -102,7 +102,9 @@ class UIMap(Map):
 
     def __init__(self, master):
         super().__init__()
-        self.canvas = tk.Canvas(master, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT, background='bisque')
+        self.frame = tk.Frame(master, bg='bisque')
+        self.canvas = tk.Canvas(self.frame, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT, background='bisque')
+        self.canvas.pack(fill=tk.BOTH, pady=10, padx=10)
         self.canvas.bind('<Motion>', self.onMouseMove)
         self.callbackMouseMove = []
 
