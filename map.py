@@ -98,7 +98,7 @@ class UIMap(Map):
     """This class provide graphical user interface for Map"""
     CANVAS_WIDTH = 600
     CANVAS_HEIGHT = 600
-    MAX_GUI_SIZE = 100
+    MAX_GUI_SIZE = 60
 
     def __init__(self, master):
         super().__init__()

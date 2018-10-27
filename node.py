@@ -96,8 +96,10 @@ class UINode(Node):
     COLOR_OBSTACLE = '#726E69'  # Gray
     COLOR_NONE = '#8e4216'  # Orange
 
-    PADX = 2
-    PADY = 2
+    PAD_WIDTH = 0.2  # percent
+    PAD_HEIGHT = 0.2  # percent
+    MARGIN_LEFT = 2  # percent
+    MARGIN_TOP = 2  # percent
 
     def __init__(self, row, col, value, width, height):
         super().__init__(row, col, value)
@@ -143,8 +145,8 @@ class UINode(Node):
         self.update()
 
     def bbox(self):
-        x0 = self.col * self.width + self.PADX
-        y0 = self.row * self.height + self.PADY
+        x0 = self.col * self.width + self.MARGIN_LEFT
+        y0 = self.row * self.height + self.MARGIN_TOP
         x1 = x0 + self.width
         y1 = y0 + self.height
 
@@ -152,10 +154,10 @@ class UINode(Node):
 
     def bboxContent(self):
         x0, y0, x1, y1 = self.bbox()
-        x0 = x0 + self.PADX
-        y0 = y0 + self.PADY
-        x1 = x1 - self.PADX
-        y1 = y1 - self.PADY
+        x0 = x0 + int(self.PAD_WIDTH * self.width)
+        y0 = y0 + int(self.PAD_WIDTH * self.width)
+        x1 = x1 - int(self.PAD_HEIGHT * self.height)
+        y1 = y1 - int(self.PAD_HEIGHT * self.height)
         return x0, y0, x1, y1
 
     def addToOpenVertices(self, openVertices):
