@@ -1,55 +1,93 @@
 import tkinter as tk
 from tkinter import filedialog
-from map import Map
-from algorithm import Algorithm, AlgorithmState
+from tkinter.font import Font
+from node import UINode
+from map import UIMap, UIEmptyMap
+from algorithm import UIAStarAlgorithm, HeuristicFunctions
 from tkinter.messagebox import showerror
-
+from tkinter import simpledialog
 
 class Toolbar(tk.Frame):
-    def __init__(self, master, map, eventHandler):
-        tk.Frame.__init__(self, master)
 
-        self.buttons = dict()
+    def __init__(self, master, eventHandler):
+        tk.Frame.__init__(self, master, bg='bisque')
+        self.grid_propagate()
+        self.controls = dict()
 
-        self.buttons['loadmap'] = tk.Button(self, text='Load map', command=eventHandler.on_load_map_button_click)
-        self.buttons['loadmap'].icon = tk.PhotoImage(file='./images/folder.png')
-        self.buttons['loadmap'].config(image=self.buttons['loadmap'].icon, compound=tk.LEFT, state=tk.NORMAL)
-        self.buttons['loadmap'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
-        self.map = map
+        buttonWidth = 70
 
-        self.buttons['step'] = tk.Button(self, text='Step', command=eventHandler.on_step_button_click)
-        self.buttons['step'].icon = tk.PhotoImage(file='./images/play.png')
-        self.buttons['step'].config(image=self.buttons['step'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['step'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['loadmap'] = tk.Button(self, text='Load map', command=eventHandler.onLoadMapButtonClick, width=buttonWidth)
+        self.controls['loadmap'].icon = tk.PhotoImage(file='./images/folder.png')
+        self.controls['loadmap'].config(image=self.controls['loadmap'].icon, compound=tk.LEFT, state=tk.NORMAL)
+        self.controls['loadmap'].grid(row=0, column=0, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
-        self.buttons['pause'] = tk.Button(self, text='Pause', command=eventHandler.on_pause_button_click)
-        self.buttons['pause'].icon = tk.PhotoImage(file='./images/pause.png')
-        self.buttons['pause'].config(image=self.buttons['pause'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['pause'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['step'] = tk.Button(self, text='Step', command=eventHandler.on_step_button_click,width=buttonWidth)
+        self.controls['step'].icon = tk.PhotoImage(file='./images/play.png')
+        self.controls['step'].config(image=self.controls['step'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['step'].grid(row=0, column=1, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
-        self.buttons['fastforward'] = tk.Button(self, text="Fast Forward", command=eventHandler.on_fast_forward_button_click)
-        self.buttons['fastforward'].icon = tk.PhotoImage(file='./images/next.png')
-        self.buttons['fastforward'].config(image=self.buttons['fastforward'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['fastforward'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['pause'] = tk.Button(self, text='Pause', command=eventHandler.on_pause_button_click,width=buttonWidth)
+        self.controls['pause'].icon = tk.PhotoImage(file='./images/pause.png')
+        self.controls['pause'].config(image=self.controls['pause'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['pause'].grid(row=0, column=2, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
-        self.buttons['restart'] = tk.Button(self, text='Restart', command=eventHandler.on_restart_button_click)
-        self.buttons['restart'].icon = tk.PhotoImage(file='./images/refresh.png')
-        self.buttons['restart'].config(image=self.buttons['restart'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['restart'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['stop'] = tk.Button(self, text='Stop', command=eventHandler.onStopButtonClick,width=buttonWidth)
+        self.controls['stop'].icon = tk.PhotoImage(file='./images/cross.png')
+        self.controls['stop'].config(image=self.controls['stop'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['stop'].grid(row=0, column=3, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
-        heuristic_option_list = list(Algorithm.HeuristicFunction.keys())
-        self.heuristic_option = tk.StringVar()
-        self.heuristic_option.set(heuristic_option_list[0])
-        self.heuristic_option_menu = tk.OptionMenu(self, self.heuristic_option, *heuristic_option_list,
-                                                   command=eventHandler.on_heuristic_change)
-        self.heuristic_option_menu.pack(side=tk.LEFT, fill=tk.BOTH, pady=0)
+        self.controls['run'] = tk.Button(self, text="Run", command=eventHandler.on_fast_forward_button_click,width=buttonWidth)
+        self.controls['run'].icon = tk.PhotoImage(file='./images/next.png')
+        self.controls['run'].config(image=self.controls['run'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['run'].grid(row=0, column=4, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
-    def setAvailability(self, isEnable):
-        for name, button in self.buttons.items():
+        self.controls['restart'] = tk.Button(self, text='Restart', command=eventHandler.on_restart_button_click,width=buttonWidth)
+        self.controls['restart'].icon = tk.PhotoImage(file='./images/refresh.png')
+        self.controls['restart'].config(image=self.controls['restart'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['restart'].grid(row=0, column=5, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
+
+        self.heuristicOption = tk.StringVar()
+
+        # self.controls['heuristic'] = tk.OptionMenu(self, self.heuristic_option, *heuristic_option_list,
+        #                                            command=eventHandler.onHeuristicOptionChange)
+        # self.controls['heuristic'].config(state=tk.DISABLED)
+        # self.controls['heuristic'].grid(row=0, column=6, pady=2, padx=2, sticky=tk.NSEW)
+        self.controls['heuclidean'] = tk.Radiobutton(self, variable=self.heuristicOption,
+                                              text='Euclidean Heuristic', value='Euclidean Distance',
+                                              bg='bisque', activebackground='bisque',
+                                              command=eventHandler.onChoseHeuristicEuclidean)
+        self.controls['heuclidean'].grid(row=0,column=6,pady=2,padx=2,sticky=tk.W)
+        self.controls['hdiagonal'] = tk.Radiobutton(self, variable=self.heuristicOption,
+                                             text='Diagonal Heuristic', value='Diagonal Distance',
+                                             bg='bisque', activebackground='bisque',
+                                                    command=eventHandler.onChoseHeuristicDiagonal)
+        self.controls['hdiagonal'].grid(row=1, column=6, pady=2, padx=2, sticky=tk.W)
+        self.controls['heuclidean'].select()
+
+
+    def __setAvailability(self, isEnable, nameControl):
+        try:
             if isEnable:
-                button.config(state=tk.NORMAL)
+                self.controls[nameControl].config(state=tk.NORMAL)
             else:
-                button.config(state=tk.DISABLED)
+                self.controls[nameControl].config(state=tk.DISABLED)
+        except KeyError:
+            print('Key wrong:', nameControl)
+
+    def setAvailability(self, isEnable, *args):
+        """If args is None, then apply isEnable to ALL controls"""
+        if args:
+            for name in args:
+                if name == 'heuristic':
+                    self.__setAvailability(isEnable, 'heuclidean')
+                    self.__setAvailability(isEnable, 'hdiagonal')
+                else:
+                    self.__setAvailability(isEnable, name)
+
+        else:
+            for name, _ in self.controls.items():
+                self.__setAvailability(isEnable, name)
+
 
 
 class StatusBar(tk.Frame):
@@ -61,77 +99,146 @@ class StatusBar(tk.Frame):
         self.textF = tk.StringVar()
         self.textG = tk.StringVar()
         self.textH = tk.StringVar()
+        self.textResult = tk.StringVar()
 
         self.addTextStatus('Row:', self.textRow)
         self.addTextStatus('Col:', self.textCol)
         self.addTextStatus('G:', self.textG)
         self.addTextStatus('H:', self.textH)
         self.addTextStatus('F:', self.textF)
+        self.addTextStatus('Result:', self.textResult)
 
-    def addTextStatus(self, label, observer):
-        frame = tk.Frame(self, width=100)
+    def addTextStatus(self, labelText, observer):
+        frame = tk.Frame(self)
         frame.pack(side=tk.LEFT, fill=tk.BOTH)
-        tk.Label(frame, text=label, background=self.bgColor, width=5, fg='blue').pack(side=tk.LEFT, fill=tk.BOTH)
-        tk.Label(frame, textvariable=observer, background=self.bgColor, width=10, fg='red').pack(side=tk.LEFT, fill=tk.BOTH)
+        label = tk.Label(frame, text=labelText, background=self.bgColor, fg='blue', width=5)
+        label.pack(side=tk.LEFT, fill=tk.BOTH)
+        content = tk.Label(frame, textvariable=observer, background=self.bgColor, width=8, fg='red')
+        content.pack(side=tk.LEFT, fill=tk.BOTH)
+
+    def statusChangeCallback(self, node, heuristicValue):
+        self.textRow.set(str(node.row))
+        self.textCol.set(str(node.col))
+        self.textF.set('{0:.2f}'.format(round(node.F, 2)))
+        self.textG.set('{0:.2f}'.format(round(node.G, 2)))
+        self.textH.set('{0:.2f}'.format(round(heuristicValue, 2)))
+
+    def solutionChangeCallback(self, solution):
+        self.textResult.set(str(len(solution)))
+
+class InfoFrame(tk.Frame):
+
+    CANVAS_WIDTH = 100
+
+    def __init__(self, master):
+        self.bgColor = 'bisque'
+        self.font = Font(size=8, weight="bold")
+        tk.Frame.__init__(self, master, bg=self.bgColor)
+
+        self.showNodeInfo()
+        self.showStudentInfo()
+
+
+    def showNodeInfo(self):
+        nodeInfoFrame = tk.Frame(self, bg=self.bgColor)
+        nodeInfoFrame.pack(side=tk.TOP, fill=tk.BOTH)
+        self.createNodeInfo(nodeInfoFrame, 'Open', UINode.COLOR_OPEN, 0, 0)
+        self.createNodeInfo(nodeInfoFrame, 'Close', UINode.COLOR_CLOSE, 1, 0)
+        self.createNodeInfo(nodeInfoFrame, 'Solution', UINode.COLOR_SOLUTION, 2, 0)
+        self.createNodeInfo(nodeInfoFrame, 'Start', UINode.COLOR_START, 3, 0)
+        self.createNodeInfo(nodeInfoFrame, 'Goal', UINode.COLOR_GOAL, 4, 0)
+        self.createNodeInfo(nodeInfoFrame, 'Obstacle', UINode.COLOR_OBSTACLE, 5, 0)
+        self.createNodeInfo(nodeInfoFrame, 'Free', UINode.COLOR_NONE, 6, 0)
+
+    def createNodeInfo(self, master, labelNode, colorNode, row, col):
+        nodeInstance = tk.Frame(master, bg=colorNode, width=50, height=50)
+        nodeInstance.grid(row=row, column=col, sticky=tk.NSEW, pady=10, padx=10)
+        label = tk.Label(master, text=labelNode, bg=self.bgColor)
+        label.grid(row=row, column=col+1, sticky=tk.NSEW, pady=10, padx=10)
+
+    def showStudentInfo(self):
+        studentInfoFrame = tk.Frame(self, bg=self.bgColor)
+        studentInfoFrame.pack(side=tk.TOP, fill=tk.BOTH)
+        self.createStudentInfo(studentInfoFrame, 'Ly Vinh Loi', '1612348', 'vinhloiit1327@gmail.com')
+        self.createStudentInfo(studentInfoFrame, 'Nguyen Huu Truong', '1612756', 'ngoctruong9x.inc@gmail.com')
+        pass
+
+    def createStudentInfo(self, master, studentName, studentID, studentEmail):
+        frame = tk.Frame(master, bg=self.bgColor)
+        frame.pack(side=tk.TOP, pady=10, padx=10)
+
+        labelName = tk.Label(frame, text=studentName, bg=self.bgColor, fg='blue', font=self.font)
+        labelName.pack(side=tk.TOP)
+        labelID = tk.Label(frame, text=studentID, bg=self.bgColor, fg='blue', font=self.font)
+        labelID.pack(side=tk.TOP)
+        labelEmail = tk.Label(frame, text=studentEmail, bg=self.bgColor, fg='blue', font=self.font)
+        labelEmail.pack(side=tk.TOP)
+        pass
+
 
 class Application(tk.Frame):
+
     def __init__(self, master):
-        tk.Frame.__init__(self, master)
+        tk.Frame.__init__(self, master, bg='bisque')
 
-        self.map = Map(self, True)
-        self.toolbar = Toolbar(self, self.map, self)
+        self.toolbar = Toolbar(self, self)
+        self.toolbar.grid(row=0, column=0, sticky=tk.NSEW)
+
         self.statusBar = StatusBar(self)
+        self.statusBar.grid(row=1, column=0, sticky=tk.NSEW)
 
-        self.toolbar.pack(side=tk.TOP, fill=tk.NONE, expand=True)
-        self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
-        self.map.canvas.bind('<Motion>', self.onMouseMove)
-        self.statusBar.pack(side=tk.TOP, fill=tk.BOTH)
+        self.infoFrame = InfoFrame(self)
+        self.infoFrame.grid(row=0, column=1, rowspan=3, sticky=tk.NSEW)
 
-        self.alg = Algorithm(self.map)
+        self.initDefault()
 
-    def isMapLoaded(self):
-        return self.map.rows != 0 and self.map.cols != 0
+    def initDefault(self):
+        self.currentHeuristic = HeuristicFunctions[self.toolbar.heuristicOption.get()]
 
-    def onMouseMove(self, event):
-        if self.isMapLoaded():
-            nodeId = self.map.canvas.find_withtag(tk.CURRENT)
-            coord = self.map.canvas.coords(nodeId)
-            if len(coord) != 0:
-                x = coord[0]
-                y = coord[1]
-                row = int(y / self.map.nodeWidth)
-                col = int(x / self.map.nodeHeight)
-                self.triggerStatusText(row, col)
+        self.alg = UIAStarAlgorithm(self.currentHeuristic)
 
-    def triggerStatusText(self, row, col):
-        self.statusBar.textRow.set(str(row))
-        self.statusBar.textCol.set(str(col))
-        self.statusBar.textF.set('{0:.2f}'.format(round(self.alg.F[row][col], 2)))
-        self.statusBar.textG.set('{0:.2f}'.format(round(self.alg.G[row][col], 2)))
-        self.statusBar.textH.set('{0:.2f}'.format(round(self.alg.heuristic_function((row, col), self.map.goal), 2)))
+        self.map = UIEmptyMap(self)
+        # self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
+        self.map.frame.grid(row=2, sticky=tk.NSEW)
+
 
     def on_step_button_click(self):
-        self.alg.AStarStateMachineStep(1)
+        self.alg.step()
+        self.toolbar.setAvailability(True)
+        self.toolbar.setAvailability(False, 'pause', 'stop', 'heuristic')
 
-    def on_heuristic_change(self, heuristic_name):
-        print(heuristic_name)
-        self.alg.set_heuristic_function(Algorithm.HeuristicFunction[heuristic_name])
+    def onChoseHeuristicEuclidean(self):
+        self.onHeuristicOptionChange('Euclidean Distance')
+
+    def onChoseHeuristicDiagonal(self):
+        self.onHeuristicOptionChange('Diagonal Distance')
+
+    def onHeuristicOptionChange(self, heuristic_name):
+        self.currentHeuristic = HeuristicFunctions[heuristic_name]
+        self.alg.setHeuristicFunction(self.currentHeuristic)
 
     def on_fast_forward_button_click(self):
-        if not hasattr(self, 'fast_forward_cb_id'):
-            self.fast_forward()
+        self.alg.fastForward()
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'pause', 'stop')
 
     def on_pause_button_click(self):
-        if hasattr(self, 'fast_forward_cb_id'):
-            self.after_cancel(self.fast_forward_cb_id)
-            del self.fast_forward_cb_id
+        self.alg.pause()
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'step', 'fastforward', 'restart')
 
-    def fast_forward(self):
-        if self.alg.AStarStateMachineStep(1) != AlgorithmState.DONE:
-            self.fast_forward_cb_id = self.after(1, self.fast_forward)
+    def onStopButtonClick(self):
+        self.alg.stop()
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'loadmap', 'restart')
+
+    def onAlgorithmDone(self, solution):
+        self.statusBar.solutionChangeCallback(solution)
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'loadmap', 'restart')
 
 
-    def on_load_map_button_click(self):
+    def onLoadMapButtonClick(self):
         file_path = filedialog.askopenfilename(initialdir='./',
                                                title='Select file',
                                                filetypes=(
@@ -140,19 +247,41 @@ class Application(tk.Frame):
                                                ))
         if file_path:
             try:
-                self.map.loadFromFile(file_path)
-                self.map.draw()
-                self.alg.onUpdateMap()
-                self.toolbar.setAvailability(True)
+                map = UIMap(self)
+                map.loadFromFile(file_path)
+                self.changeMap(map)
             except IOError as err:
                 showerror('Error', err)
-            pass
+
+    def restart(self):
+        self.alg.stop()
+        self.alg.restart()
+        self.statusBar.textResult.set('')
 
     def on_restart_button_click(self):
-        self.toolbar.setAvailability(False)
-        self.alg.restart()
+        self.restart()
+        self.buttonAlgorithmState()
+
+    def buttonAlgorithmState(self):
         self.toolbar.setAvailability(True)
-        pass
+        self.toolbar.setAvailability(False, 'pause', 'stop')
+
+    def changeMap(self, newMap):
+        self.alg.reset()
+        self.map.destroy()
+        self.map = newMap
+        self.map.draw()
+        self.map.frame.grid(row=2, column=0, sticky=tk.NSEW)
+
+
+        self.alg.setMap(self.map)
+        self.alg.registerCallbackDone(self.onAlgorithmDone)
+        self.alg.registerStatusNodeCallback(self.statusBar.statusChangeCallback)
+
+        self.buttonAlgorithmState()
+
+
+
 
 
 def run_app():
