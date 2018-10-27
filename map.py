@@ -103,13 +103,11 @@ class UIMap(Map):
     def __init__(self, master):
         super().__init__()
         self.canvas = tk.Canvas(master, width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT, background='bisque')
-        self.canvas.pack(side=tk.TOP, fill=tk.BOTH)
         self.canvas.bind('<Motion>', self.onMouseMove)
+        self.callbackMouseMove = []
 
-        self.callbackMouseMove = None
-
-    def setCallbackMouseMove(self, callback):
-        self.callbackMouseMove = callback
+    def registerCallbackMouseMove(self, callback):
+        self.callbackMouseMove.append(callback)
 
     def isValidMapSize(self, totalRows, totalCols):
         return 1 <= totalRows <= self.MAX_GUI_SIZE and 1 <= totalCols <= self.MAX_GUI_SIZE
@@ -130,6 +128,9 @@ class UIMap(Map):
         super().clear()
         self.canvas.delete(tk.ALL)
 
+    def destroy(self):
+        self.canvas.destroy()
+
     def onMouseMove(self, _):
         if self.isMapLoaded():
             nodeId = self.canvas.find_withtag(tk.CURRENT)
@@ -139,8 +140,33 @@ class UIMap(Map):
                 y = coord[1]
                 row = int(y / self.nodeWidth)
                 col = int(x / self.nodeHeight)
-                if self.callbackMouseMove is not None:
-                    self.callbackMouseMove(self.graph[row][col])
+                for callback in self.callbackMouseMove:
+                    callback(self.graph[row][col])
+
+
+class UIEmptyMap(UIMap):
+    """This class provide graphical user interface for Empty Map"""
+
+    def __init__(self, master):
+        super().__init__(master)
+
+    def isValidMapSize(self, totalRows, totalCols):
+        return False
+
+    def isMapLoaded(self):
+        return False
+
+    def draw(self):
+        pass
+
+    def createNode(self, row, col, totalRows, totalCols, value):
+        pass
+
+    def clear(self):
+        pass
+
+    def onMouseMove(self, _):
+        pass
 
 
 
