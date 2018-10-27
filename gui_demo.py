@@ -227,8 +227,9 @@ class Application(tk.Frame):
 
     def on_step_button_click(self):
         self.alg.step()
-        self.toolbar.setAvailability(True)
-        self.toolbar.setAvailability(False, 'pause', 'stop', 'heuristic')
+        if not self.alg.isStop():
+            self.toolbar.setAvailability(True)
+            self.toolbar.setAvailability(False, 'pause', 'stop', 'heuristic')
 
     def onChoseHeuristicEuclidean(self):
         self.onHeuristicOptionChange('Euclidean Distance')
@@ -248,7 +249,7 @@ class Application(tk.Frame):
     def on_pause_button_click(self):
         self.alg.pause()
         self.toolbar.setAvailability(False)
-        self.toolbar.setAvailability(True, 'step', 'fastforward', 'restart')
+        self.toolbar.setAvailability(True, 'step', 'run', 'restart')
 
     def onStopButtonClick(self):
         self.alg.stop()

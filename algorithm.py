@@ -1,6 +1,7 @@
 import math
 from map import Map, UIMap
-from node import Node
+
+
 def heuristic_euclidean(start, goal):
     return math.sqrt((start.row - goal.row) ** 2 + (start.col - goal.col) ** 2)
 
@@ -18,8 +19,8 @@ HeuristicFunctions = {
 class AlgorithmState:
     INIT = 0
     RUN = 1
-    TRACE_SOLUTION = 2
-    DONE = 3
+    FINISH = 2
+    STOP = 3
 
 
 class StateMachine:
@@ -33,10 +34,7 @@ class StateMachine:
     def stateStep(self):
         pass
 
-    def stateTrace(self):
-        pass
-
-    def stateDone(self):
+    def stateFinish(self):
         pass
 
     def step(self):
@@ -44,10 +42,10 @@ class StateMachine:
             self.stateInit()
         elif self.state == AlgorithmState.RUN:
             self.stateStep()
-        elif self.state == AlgorithmState.TRACE_SOLUTION:
-            self.stateTrace()
-        elif self.state == AlgorithmState.DONE:
-            self.stateDone()
+        elif self.state == AlgorithmState.FINISH:
+            self.stateFinish()
+        elif self.state == AlgorithmState.STOP:
+            print('StateMachine STOPPED!')
         else:
             raise RuntimeError('Invalid State')
 
@@ -55,7 +53,7 @@ class StateMachine:
         self.state = state
 
     def run(self):
-        while self.state != AlgorithmState.DONE:
+        while self.state != AlgorithmState.STOP:
             self.step()
 
 
@@ -133,7 +131,7 @@ class AStarAlgorithm(StateMachine):
 
         current = self.__fValueOfOpenVertices()
         if current is None:
-            self.setState(AlgorithmState.TRACE_SOLUTION)
+            self.setState(AlgorithmState.FINISH)
             return
 
         if self.map.goal.F > current.F:
@@ -153,13 +151,14 @@ class AStarAlgorithm(StateMachine):
                         else:
                             self.incons.append(n)
         else:
-            self.setState(AlgorithmState.TRACE_SOLUTION)
+            self.setState(AlgorithmState.FINISH)
             return
 
+    def stateFinish(self):
+        self.traceSolution()
+        self.setState(AlgorithmState.STOP)
 
-    def stateTrace(self):
-        super().stateTrace()
-
+    def traceSolution(self):
         result = []
 
         if self.map.goal.cameFrom is not None:
@@ -171,12 +170,6 @@ class AStarAlgorithm(StateMachine):
 
             for x in result:
                 x.addToSolutionVertices(self.solution)
-
-        self.setState(AlgorithmState.DONE)
-
-    def stateDone(self):
-        super().stateDone()
-        print('Done')
 
     def __fValueOfOpenVertices(self):
         if len(self.openVertices) == 0:
@@ -206,7 +199,6 @@ class UIAStarAlgorithm(AStarAlgorithm):
 
     def __init__(self, heuristic_function=heuristic_euclidean):
         super().__init__(heuristic_function)
-        self.__isStop = False
         self.__callbackDone = []
         self.__callbackStatusNode = []
 
@@ -220,11 +212,10 @@ class UIAStarAlgorithm(AStarAlgorithm):
             del self.fast_forward_cb_id
 
     def isStop(self):
-        return self.__isStop
+        return self.state == AlgorithmState.STOP
 
     def restart(self):
         super().restart()
-        self.__isStop = False
 
     def reset(self):
         self.stop()
@@ -237,16 +228,14 @@ class UIAStarAlgorithm(AStarAlgorithm):
             callback(None, 0)
         self.__callbackStatusNode.clear()
 
-    def run(self):
-        if not self.isStop() and self.state != AlgorithmState.DONE:
-            super().step()
-            self.fast_forward_cb_id = self.map.canvas.after(1, self.run)
-        else:
-            self.onAlgorithmDone()
+    def stateFinish(self):
+        super().stateFinish()
+        self.onAlgorithmDone()
 
-    def step(self):
-        if not self.isStop():
-            super().step()
+    def run(self):
+        if self.state != AlgorithmState.STOP:
+            self.step()
+            self.fast_forward_cb_id = self.map.canvas.after(1, self.run)
 
     def fastForward(self):
         if not hasattr(self, 'fast_forward_cb_id'):
@@ -256,7 +245,7 @@ class UIAStarAlgorithm(AStarAlgorithm):
         self.__cancelFastForward()
 
     def stop(self):
-        self.__isStop = True
+        self.setState(AlgorithmState.FINISH)
         self.__cancelFastForward()
 
     def registerCallbackDone(self, callback):
