@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
-from map import UIMap
+from map import UIMap, UIEmptyMap
 from algorithm import UIAStarAlgorithm, HeuristicFunctions, UIARAAlgorithm
 from tkinter.messagebox import showerror
 from tkinter import simpledialog
@@ -10,66 +10,73 @@ class Toolbar(tk.Frame):
     def __init__(self, master, eventHandler):
         tk.Frame.__init__(self, master)
 
-        self.buttons = dict()
+        self.controls = dict()
 
-        self.buttons['loadmap'] = tk.Button(self, text='Load map', command=eventHandler.on_load_map_button_click)
-        self.buttons['loadmap'].icon = tk.PhotoImage(file='./images/folder.png')
-        self.buttons['loadmap'].config(image=self.buttons['loadmap'].icon, compound=tk.LEFT, state=tk.NORMAL)
-        self.buttons['loadmap'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['loadmap'] = tk.Button(self, text='Load map', command=eventHandler.onLoadMapButtonClick)
+        self.controls['loadmap'].icon = tk.PhotoImage(file='./images/folder.png')
+        self.controls['loadmap'].config(image=self.controls['loadmap'].icon, compound=tk.LEFT, state=tk.NORMAL)
+        self.controls['loadmap'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
         self.alg_option = tk.StringVar()
         self.alg_option.set(Application.alg_option_list[0])
-        self.alg_option_menu = tk.OptionMenu(self, self.alg_option, *Application.alg_option_list,
-                                                   command=eventHandler.on_alg_change)
-        self.alg_option_menu.pack(side=tk.LEFT, fill=tk.BOTH, pady=0)
+        self.controls['algorithm'] = tk.OptionMenu(self, self.alg_option, *Application.alg_option_list,
+                                                   command=eventHandler.onAlgorithmOptionChange)
+        self.controls['algorithm'].config(state=tk.DISABLED)
+        self.controls['algorithm'].pack(side=tk.LEFT, fill=tk.BOTH, pady=0)
 
         heuristic_option_list = list(HeuristicFunctions.keys())
         self.heuristic_option = tk.StringVar()
         self.heuristic_option.set(heuristic_option_list[0])
-        self.heuristic_option_menu = tk.OptionMenu(self, self.heuristic_option, *heuristic_option_list,
-                                                   command=eventHandler.on_heuristic_change)
-        self.heuristic_option_menu.pack(side=tk.LEFT, fill=tk.BOTH, pady=0)
+        self.controls['heuristic'] = tk.OptionMenu(self, self.heuristic_option, *heuristic_option_list,
+                                                   command=eventHandler.onHeuristicOptionChange)
+        self.controls['heuristic'].config(state=tk.DISABLED)
+        self.controls['heuristic'].pack(side=tk.LEFT, fill=tk.BOTH, pady=0)
 
-        self.buttons['step'] = tk.Button(self, text='Step', command=eventHandler.on_step_button_click)
-        self.buttons['step'].icon = tk.PhotoImage(file='./images/play.png')
-        self.buttons['step'].config(image=self.buttons['step'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['step'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['step'] = tk.Button(self, text='Step', command=eventHandler.on_step_button_click)
+        self.controls['step'].icon = tk.PhotoImage(file='./images/play.png')
+        self.controls['step'].config(image=self.controls['step'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['step'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
-        self.buttons['pause'] = tk.Button(self, text='Pause', command=eventHandler.on_pause_button_click)
-        self.buttons['pause'].icon = tk.PhotoImage(file='./images/pause.png')
-        self.buttons['pause'].config(image=self.buttons['pause'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['pause'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['pause'] = tk.Button(self, text='Pause', command=eventHandler.on_pause_button_click)
+        self.controls['pause'].icon = tk.PhotoImage(file='./images/pause.png')
+        self.controls['pause'].config(image=self.controls['pause'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['pause'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
-        self.buttons['fastforward'] = tk.Button(self, text="Fast Forward", command=eventHandler.on_fast_forward_button_click)
-        self.buttons['fastforward'].icon = tk.PhotoImage(file='./images/next.png')
-        self.buttons['fastforward'].config(image=self.buttons['fastforward'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['fastforward'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['stop'] = tk.Button(self, text='Stop', command=eventHandler.onStopButtonClick)
+        self.controls['stop'].icon = tk.PhotoImage(file='./images/cross.png')
+        self.controls['stop'].config(image=self.controls['stop'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['stop'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
-        # self.buttons['ara'] = tk.Button(self, text='ARA', command=eventHandler.on_ara_button_click)
-        # self.buttons['ara'].icon = tk.PhotoImage(file='./images/next.png')
-        # self.buttons['ara'].config(image=self.buttons['ara'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        # self.buttons['ara'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['fastforward'] = tk.Button(self, text="Fast Forward", command=eventHandler.on_fast_forward_button_click)
+        self.controls['fastforward'].icon = tk.PhotoImage(file='./images/next.png')
+        self.controls['fastforward'].config(image=self.controls['fastforward'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['fastforward'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
-        self.buttons['restart'] = tk.Button(self, text='Restart', command=eventHandler.on_restart_button_click)
-        self.buttons['restart'].icon = tk.PhotoImage(file='./images/refresh.png')
-        self.buttons['restart'].config(image=self.buttons['restart'].icon, compound=tk.LEFT, state=tk.DISABLED)
-        self.buttons['restart'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
+        self.controls['restart'] = tk.Button(self, text='Restart', command=eventHandler.on_restart_button_click)
+        self.controls['restart'].icon = tk.PhotoImage(file='./images/refresh.png')
+        self.controls['restart'].config(image=self.controls['restart'].icon, compound=tk.LEFT, state=tk.DISABLED)
+        self.controls['restart'].pack(side=tk.LEFT, fill=tk.BOTH, pady=2)
 
+    def __setAvailability(self, isEnable, nameControl):
+        try:
+            if isEnable:
+                self.controls[nameControl].config(state=tk.NORMAL)
+            else:
+                self.controls[nameControl].config(state=tk.DISABLED)
+        except KeyError:
+            print('Key wrong:', nameControl)
 
+    def setAvailability(self, isEnable, *args):
+        """If args is None, then apply isEnable to ALL controls"""
+        if args:
+            for name in args:
+                self.__setAvailability(isEnable, name)
 
-    def setAvailability(self, isEnable, *buttonName):
-        if len(buttonName) == 0:
-            for name, button in self.buttons.items():
-                if isEnable:
-                    button.config(state=tk.NORMAL)
-                else:
-                    button.config(state=tk.DISABLED)
         else:
-            for name in buttonName:
-                if isEnable:
-                    self.buttons[name].config(state=tk.NORMAL)
-                else:
-                    self.buttons[name].config(state=tk.DISABLED)
+            for name, _ in self.controls.items():
+                self.__setAvailability(isEnable, name)
+
+
 
 class StatusBar(tk.Frame):
     def __init__(self, master):
@@ -97,6 +104,16 @@ class StatusBar(tk.Frame):
         content = tk.Label(frame, textvariable=observer, background=self.bgColor, width=10, fg='red')
         content.pack(side=tk.LEFT, fill=tk.BOTH)
 
+    def statusChangeCallback(self, node, heuristicValue):
+        self.textRow.set(str(node.row))
+        self.textCol.set(str(node.col))
+        self.textF.set('{0:.2f}'.format(round(node.F, 2)))
+        self.textG.set('{0:.2f}'.format(round(node.G, 2)))
+        self.textH.set('{0:.2f}'.format(round(heuristicValue, 2)))
+
+    def solutionChangeCallback(self, solution):
+        self.textResult.set(str(len(solution)))
+
 
 class Application(tk.Frame):
 
@@ -108,77 +125,56 @@ class Application(tk.Frame):
         self.toolbar = Toolbar(self, self)
         self.toolbar.pack(side=tk.TOP, fill=tk.NONE, expand=True)
 
-        self.statusBar = StatusBar(self)
+        self.statusBar = StatusBar(master)
         self.statusBar.pack(side=tk.TOP, fill=tk.BOTH)
-
-        self.alg = None
-        self.map = None
 
         currentHeuristicKey = list(HeuristicFunctions.keys())[0]
         self.currentHeuristic = HeuristicFunctions[currentHeuristicKey]
 
+        self.alg = UIAStarAlgorithm(self.currentHeuristic)
+        self.map = UIEmptyMap(self)
+
         currentAlgKey = self.alg_option_list[0]
-        self.setAlgorithm(currentAlgKey)
+        self.changeAlgorithm(currentAlgKey)
 
-    def isMapLoaded(self):
-        return self.map is not None
+    def initDefault(self):
+        self.map = UIEmptyMap(self)
+        self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
 
-    def onMouseMove(self, _):
-        if self.isMapLoaded():
-            nodeId = self.map.canvas.find_withtag(tk.CURRENT)
-            coord = self.map.canvas.coords(nodeId)
-            if len(coord) != 0:
-                x = coord[0]
-                y = coord[1]
-                row = int(y / self.map.nodeWidth)
-                col = int(x / self.map.nodeHeight)
-                self.triggerStatusText(row, col)
-
-    def triggerStatusText(self, row, col):
-        self.statusBar.textRow.set(str(row))
-        self.statusBar.textCol.set(str(col))
-
-        node = self.map.graph[row][col]
-        self.statusBar.textF.set('{0:.2f}'.format(round(node.F, 2)))
-        self.statusBar.textG.set('{0:.2f}'.format(round(node.G, 2)))
-        self.statusBar.textH.set('{0:.2f}'.format(round(node.calcH(self.currentHeuristic, self.map.goal), 2)))
 
     def on_step_button_click(self):
         self.alg.step()
+        self.toolbar.setAvailability(True)
+        self.toolbar.setAvailability(False, 'algorithm', 'heuristic')
 
-    def on_heuristic_change(self, heuristic_name):
+    def onHeuristicOptionChange(self, heuristic_name):
         self.currentHeuristic = HeuristicFunctions[heuristic_name]
         self.alg.setHeuristicFunction(self.currentHeuristic)
 
     def on_fast_forward_button_click(self):
         self.alg.fastForward()
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'pause', 'stop')
+        if isinstance(self.alg, UIARAAlgorithm):
+            self.toolbar.setAvailability(False, 'pause')
 
     def on_pause_button_click(self):
         self.alg.pause()
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'step', 'fastforward', 'restart')
 
-    def on_algorithm_done(self, solution):
-        self.statusBar.textResult.set(str(len(solution)))
+    def onStopButtonClick(self):
+        self.alg.stop()
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'loadmap', 'restart')
 
-    def loadMap(self, filePath):
-        try:
-            if self.map is None:
-                self.map = UIMap(self)
-            self.map.clear()
-            self.map.loadFromFile(filePath)
-            self.map.draw()
-            self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
-            self.map.canvas.bind('<Motion>', self.onMouseMove)
-            self.alg.setMap(self.map)
-            self.statusBar.textResult.set('')
-            self.toolbar.setAvailability(True)
+    def onAlgorithmDone(self, solution):
+        self.statusBar.solutionChangeCallback(solution)
+        self.toolbar.setAvailability(False)
+        self.toolbar.setAvailability(True, 'loadmap', 'restart')
 
-            if self.alg is not None:
-                self.alg.reset()
-        except IOError as err:
-            showerror('Error', err)
-        pass
 
-    def on_load_map_button_click(self):
+    def onLoadMapButtonClick(self):
         file_path = filedialog.askopenfilename(initialdir='./',
                                                title='Select file',
                                                filetypes=(
@@ -186,31 +182,61 @@ class Application(tk.Frame):
                                                    ("all files", "*.*")
                                                ))
         if file_path:
-            self.loadMap(file_path)
+            try:
+                map = UIMap(self)
+                map.loadFromFile(file_path)
+                self.changeMap(map)
+            except IOError as err:
+                showerror('Error', err)
+
+    def restart(self):
+        self.alg.stop()
+        self.alg.restart()
+        self.statusBar.textResult.set('')
 
     def on_restart_button_click(self):
-        self.toolbar.setAvailability(False)
-        self.alg.reset()
-        self.statusBar.textResult.set('')
+        self.restart()
+        self.buttonAlgorithmState()
+
+    def buttonAlgorithmState(self):
         self.toolbar.setAvailability(True)
+        self.toolbar.setAvailability(False, 'pause', 'stop')
+        if isinstance(self.alg, UIARAAlgorithm):
+            self.toolbar.setAvailability(False, 'step')
 
-    def setAlgorithm(self, name):
-        if self.alg is not None:
-            self.alg.reset()
-
-        if name == 'A*' and (self.alg is None or self.alg is not UIAStarAlgorithm):
-            print('A*')
-            self.alg = UIAStarAlgorithm(self.map, self.currentHeuristic)
-        elif name == 'ARA' and (self.alg is None or self.alg is not UIARAAlgorithm):
-            print('ARA')
-            self.alg = UIARAAlgorithm(self.map, self.currentHeuristic)
+    def changeAlgorithm(self, name):
+        self.alg.map.reset() #TODO co the luc moi vao chua co map!!
+        if name == 'A*' and self.alg is not UIAStarAlgorithm:
+            self.alg = UIAStarAlgorithm(self.currentHeuristic)
+        elif name == 'ARA' and self.alg is not UIARAAlgorithm:
+            self.alg = UIARAAlgorithm(self.currentHeuristic)
         else:
             raise ValueError('Invalid type')
+        # self.restart()
 
-        self.alg.setSolutionCallback(self.on_algorithm_done)
+        self.alg.setMap(self.map)
+        self.alg.registerCallbackDone(self.onAlgorithmDone)
+        self.alg.registerStatusNodeCallback(self.statusBar.statusChangeCallback)
 
-    def on_alg_change(self, name):
-        self.setAlgorithm(name)
+    def onAlgorithmOptionChange(self, name):
+        """Called when user click on option menu 'ARA' or 'A*'"""
+        self.changeAlgorithm(name)
+
+    def changeMap(self, newMap):
+        self.alg.reset()
+        self.map.destroy()
+        self.map = newMap
+        self.map.draw()
+        self.map.canvas.pack(side=tk.TOP, fill=tk.BOTH)
+
+        self.alg.setMap(self.map)
+        self.alg.registerCallbackDone(self.onAlgorithmDone)
+        self.alg.registerStatusNodeCallback(self.statusBar.statusChangeCallback)
+
+        self.buttonAlgorithmState()
+
+
+
 
 
 def run_app():
