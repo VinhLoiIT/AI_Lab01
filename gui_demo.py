@@ -6,6 +6,18 @@ from map import UIMap, UIEmptyMap
 from algorithm import UIAStarAlgorithm, HeuristicFunctions
 from tkinter.messagebox import showerror
 from tkinter import simpledialog
+import sys
+import os
+
+def resourcePath(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class Toolbar(tk.Frame):
 
@@ -15,43 +27,38 @@ class Toolbar(tk.Frame):
         self.controls = dict()
 
         buttonWidth = 70
-
         self.controls['loadmap'] = tk.Button(self, text='Load map', command=eventHandler.onLoadMapButtonClick, width=buttonWidth)
-        self.controls['loadmap'].icon = tk.PhotoImage(file='./images/folder.png')
+        self.controls['loadmap'].icon = tk.PhotoImage(file=resourcePath('images/folder.png'))
         self.controls['loadmap'].config(image=self.controls['loadmap'].icon, compound=tk.LEFT, state=tk.NORMAL)
         self.controls['loadmap'].grid(row=0, column=0, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
         self.controls['step'] = tk.Button(self, text='Step', command=eventHandler.on_step_button_click,width=buttonWidth)
-        self.controls['step'].icon = tk.PhotoImage(file='./images/play.png')
+        self.controls['step'].icon = tk.PhotoImage(file=resourcePath('images/play.png'))
         self.controls['step'].config(image=self.controls['step'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.controls['step'].grid(row=0, column=1, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
         self.controls['pause'] = tk.Button(self, text='Pause', command=eventHandler.on_pause_button_click,width=buttonWidth)
-        self.controls['pause'].icon = tk.PhotoImage(file='./images/pause.png')
+        self.controls['pause'].icon = tk.PhotoImage(file=resourcePath('images/pause.png'))
         self.controls['pause'].config(image=self.controls['pause'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.controls['pause'].grid(row=0, column=2, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
         self.controls['stop'] = tk.Button(self, text='Stop', command=eventHandler.onStopButtonClick,width=buttonWidth)
-        self.controls['stop'].icon = tk.PhotoImage(file='./images/cross.png')
+        self.controls['stop'].icon = tk.PhotoImage(file=resourcePath('images/cross.png'))
         self.controls['stop'].config(image=self.controls['stop'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.controls['stop'].grid(row=0, column=3, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
         self.controls['run'] = tk.Button(self, text="Run", command=eventHandler.on_fast_forward_button_click,width=buttonWidth)
-        self.controls['run'].icon = tk.PhotoImage(file='./images/next.png')
+        self.controls['run'].icon = tk.PhotoImage(file=resourcePath('images/next.png'))
         self.controls['run'].config(image=self.controls['run'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.controls['run'].grid(row=0, column=4, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
         self.controls['restart'] = tk.Button(self, text='Restart', command=eventHandler.on_restart_button_click,width=buttonWidth)
-        self.controls['restart'].icon = tk.PhotoImage(file='./images/refresh.png')
+        self.controls['restart'].icon = tk.PhotoImage(file=resourcePath('images/refresh.png'))
         self.controls['restart'].config(image=self.controls['restart'].icon, compound=tk.LEFT, state=tk.DISABLED)
         self.controls['restart'].grid(row=0, column=5, pady=2, padx=2, sticky=tk.NSEW, rowspan=2)
 
         self.heuristicOption = tk.StringVar()
 
-        # self.controls['heuristic'] = tk.OptionMenu(self, self.heuristic_option, *heuristic_option_list,
-        #                                            command=eventHandler.onHeuristicOptionChange)
-        # self.controls['heuristic'].config(state=tk.DISABLED)
-        # self.controls['heuristic'].grid(row=0, column=6, pady=2, padx=2, sticky=tk.NSEW)
         self.controls['heuclidean'] = tk.Radiobutton(self, variable=self.heuristicOption,
                                               text='Euclidean Heuristic', value='Euclidean Distance',
                                               bg='bisque', activebackground='bisque',
