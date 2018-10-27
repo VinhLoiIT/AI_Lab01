@@ -1,7 +1,0 @@
-﻿Đầu tiên chạy t2, fast ngon
-Load t3, fast k đc, nhấp vài cái vào nút pause thì lại fast đc
-load t4, tương tự t3
-
-
-
-Khi đg fast, mà nhấn restart xong nó vẫn fast, t nghĩ đây là nguyên nhân làm cho load nhìu map rồi fast k đc
