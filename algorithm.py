@@ -1,6 +1,6 @@
 import math
 from map import Map, UIMap
-
+from node import Node
 def heuristic_euclidean(start, goal):
     return math.sqrt((start.row - goal.row) ** 2 + (start.col - goal.col) ** 2)
 
@@ -229,7 +229,12 @@ class UIAStarAlgorithm(AStarAlgorithm):
     def reset(self):
         self.stop()
         self.restart()
+        for callback in self.__callbackDone:
+            callback(None)
         self.__callbackDone.clear()
+
+        for callback in self.__callbackStatusNode:
+            callback(None, 0)
         self.__callbackStatusNode.clear()
 
     def run(self):

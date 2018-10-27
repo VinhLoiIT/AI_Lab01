@@ -124,14 +124,30 @@ class StatusBar(tk.Frame):
         content.pack(side=tk.LEFT, fill=tk.BOTH)
 
     def statusChangeCallback(self, node, heuristicValue):
-        self.textRow.set(str(node.row))
-        self.textCol.set(str(node.col))
-        self.textF.set('{0:.2f}'.format(round(node.F, 2)))
-        self.textG.set('{0:.2f}'.format(round(node.G, 2)))
-        self.textH.set('{0:.2f}'.format(round(heuristicValue, 2)))
+        if node is None:
+            strRow = ''
+            strCol = ''
+            strF = ''
+            strG = ''
+            strH = ''
+        else:
+            strRow = str(node.row)
+            strCol = str(node.col)
+            strF = '{0:.2f}'.format(round(node.F, 2))
+            strG = '{0:.2f}'.format(round(node.G, 2))
+            strH = '{0:.2f}'.format(round(heuristicValue, 2))
+
+        self.textRow.set(strRow)
+        self.textCol.set(strCol)
+        self.textF.set(strF)
+        self.textG.set(strG)
+        self.textH.set(strH)
 
     def solutionChangeCallback(self, solution):
-        self.textResult.set(str(len(solution)))
+        if solution is None:
+            self.textResult.set('')
+        else:
+            self.textResult.set(str(len(solution)))
 
 class InfoFrame(tk.Frame):
 
