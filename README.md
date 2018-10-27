@@ -15,13 +15,12 @@ Thành viên:
   - `python __main__.py gui`
 - Để chạy demo thuật toán A* và ARA không đồ họa:
   - `python __main__.py astar -i input_file -o output_file -hf heuristic`
-  - `python __main__.py ara -i input_file -o output_file -t time -c coefficient -hf heuristic`
+  - `python __main__.py ara -i input_file -o output_file -t time -hf heuristic`
   - Trong đó:
     - `input_file` là đường dẫn file input (một số file có sẵn được đặt trong thư mục test)
     - `output_file` là đường dẫn file để xuất kết quả, được truyền vào từ dòng lệnh
     - `heuristic` là một trong hai lựa chọn: euclidean và diagonal, mặc định là euclidean
-    - `time` là thời gian giới hạn cho thuật toán ARA đơn vị là giây, mặc định là 3.0
-    - `coefficient` là hệ số hàm heuristic, mặc định là 3
+    - `time` là thời gian giới hạn cho thuật toán ARA đơn vị là milliseconds, mặc định là 50
 
 # Tạo file input ngẫu nhiên
 - Mở file map_generator.py và sửa các giá trị
